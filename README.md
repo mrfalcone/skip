@@ -1,5 +1,8 @@
-SAIL Kaldi Interface for Python (SKIP) v0.1
+SAIL Kaldi Interface for Python (SKIP)
 ====
+
+Version 0.1
+
 
 Overview
 ----
@@ -27,7 +30,7 @@ Requirements
 Requires Python 2.6 - 2.7. In addition:
 
 * [KALDI](http://kaldi.sourceforge.net/) - Required. Should be latest version.
-* [SRILM](http://www.speech.sri.com/projects/srilm/) - Optional unless you want to generate language models directly from training data
+* [SRILM](http://www.speech.sri.com/projects/srilm/) - Optional unless you want to generate language models directly from training data.
 
 
 

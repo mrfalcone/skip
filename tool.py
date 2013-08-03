@@ -9,8 +9,13 @@ from context import KaldiContext
 
 
 def main():
-  context = KaldiContext()
-  print "Done."
+  context = KaldiContext("test")
+  L = context.makeL("/usr/skiptest/phones.txt",
+    "/usr/skiptest/words.txt",
+    "/usr/skiptest/lexicon.txt")
+  
+  print L.filename
+
 
 
 

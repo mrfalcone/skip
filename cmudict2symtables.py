@@ -9,28 +9,28 @@ from collections import deque
 from string import strip,split
 
 
-# default parameters
-addSilNoise = True
-addPositionMarkers = True
-addEmptyWord = True
-addUnknownWord = True
-addDisambigSymbols = True
-addWordBoundaries = False
-silencePhone = "SIL"
-spkNoisePhone = "SPN"
-nonspkNoisePhone = "NSN"
-silenceWord = "!SIL"
-spkNoiseWord = "<SPOKEN-NOISE>"
-nonspkNoiseWord = "<NOISE>"
-emptyStartWord = "<s>"
-emptyEndWord = "</s>"
-unknownWord = "<UNK>"
-wordDisambig = "#0"
-wboundLeft = "#1"
-wboundRight = "#2"
-
-
 def main():
+  # default parameters
+  addSilNoise = True
+  addPositionMarkers = True
+  addEmptyWord = True
+  addUnknownWord = True
+  addDisambigSymbols = True
+  addWordBoundaries = False
+  silencePhone = "SIL"
+  spkNoisePhone = "SPN"
+  nonspkNoisePhone = "NSN"
+  silenceWord = "!SIL"
+  spkNoiseWord = "<SPOKEN-NOISE>"
+  nonspkNoiseWord = "<NOISE>"
+  emptyStartWord = "<s>"
+  emptyEndWord = "</s>"
+  unknownWord = "<UNK>"
+  wordDisambig = "#0"
+  wboundLeft = "#1"
+  wboundRight = "#2"
+
+
   # process command line args
   arguments = deque(argv[1:])
   usageError = False
