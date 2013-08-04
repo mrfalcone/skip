@@ -17,6 +17,9 @@ def main():
   lmArpa = "/usr/skiptest/bg5k.arpa"
   mdlFile = "/usr/skiptest/final.mdl"
   treeFile = "/usr/skiptest/tree"
+  wavscp = "/usr/skiptest/test_eval93/wav.scp"
+  utt2spk = "/usr/skiptest/test_eval93/utt2spk"
+  spk2utt = "/usr/skiptest/test_eval93/spk2utt"
 
 
   context = KaldiContext(contextName)
@@ -44,6 +47,15 @@ def main():
   HCLG = context.makeHCLG(L, G, mdl)
   print "Done in {0:0.2f} seconds.".format(time() - t0)
   print
+
+  print "Computing features..."
+  t0 = time()
+  feats = context.makeFeats(wavscp, utt2spk=utt2spk, spk2utt=spk2utt)
+  print "Done in {0:0.2f} seconds.".format(time() - t0)
+  print
+
+
+
 
 
 

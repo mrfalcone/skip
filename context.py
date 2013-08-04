@@ -24,16 +24,11 @@ class KaldiContext(object):
   """
 
 
-
-
-
-
   def __init__(self, name):
     """
     Initializes a new Kaldi context with the specified name.
     """
     self.dirname = path.join(config.CONTEXTS_DIR, name)
-
 
 
 
@@ -222,3 +217,61 @@ class KaldiContext(object):
     mdl.filename = gmmfile
     mdl.treefile = treefile
     return mdl
+
+
+
+
+
+  def makeFeats(self, wavscp, samplefreq=16000,
+    feattype="mfcc", useenergy=False, applycmvn=True,
+    normvars=False, utt2spk=None, spk2utt=None, deltaorder=2):
+    """
+    Creates features for the wave files specified by *wavscp*.
+
+    Note: does not cache wave files or their modification dates,
+    only the wave file rspecifier.
+
+    If *feattype* is "mfcc", *useenergy* specifies whether to
+    use energy (else C0) to compute mfccs.
+
+    If *applycmvn* is True, cepstral mean normalization will
+    be applied, per-utterance by default or per-speaker if
+    *utt2spk* and *spk2utt* specify files in ark text format
+    mapping utterance ids to speaker ids and speaker ids to
+    utterance ids respectively. If *normvars* is True, cepstral
+    variance normalization will also be applied.
+
+    *deltaorder* specifies the order of delta computation
+    if greater than zero.
+
+    Returns an object representing the features.
+    """
+    if feattype == "mfcc":
+      return feat.makeMfccFeats(self.dirname, wavscp, samplefreq,
+        useenergy, applycmvn, normvars, utt2spk, spk2utt, deltaorder)
+
+    elif feattype == "plp":
+      raise NotImplementedError() 
+
+    else:
+      raise ValueError("Unsupported value: {0}.".format(feattype))
+
+
+
+
+
+  def addFeatures(self, featsfile):
+    """
+    Adds existing features to the context.
+
+    *featsfile* must be a Kaldi archive file specifying
+    the features to add.
+
+    Returns an object representing the features.
+    """
+    feats = KaldiObject()
+    feats.filename = featsfile 
+    return feats
+
+
+

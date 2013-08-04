@@ -105,7 +105,22 @@ try:
   addselfloops = userconf.addselfloops
 except AttributeError:
   addselfloops = "{0}/src/bin/add-self-loops".format(KALDI_DIR)
-
+try:
+  computemfccfeats = userconf.computemfccfeats
+except AttributeError:
+  computemfccfeats = "{0}/src/featbin/compute-mfcc-feats".format(KALDI_DIR)
+try:
+  adddeltas = userconf.adddeltas
+except AttributeError:
+  adddeltas = "{0}/src/featbin/add-deltas".format(KALDI_DIR)
+try:
+  computecmvnstats = userconf.computecmvnstats
+except AttributeError:
+  computecmvnstats = "{0}/src/featbin/compute-cmvn-stats".format(KALDI_DIR)
+try:
+  applycmvn = userconf.applycmvn
+except AttributeError:
+  applycmvn = "{0}/src/featbin/apply-cmvn".format(KALDI_DIR)
 
 
 
