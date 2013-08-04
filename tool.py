@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Command line tool to test SKIP.
+Command line tool to test KaldiContext.
 """
 __license__ = "Apache License, Version 2.0"
 
@@ -9,12 +9,12 @@ from context import KaldiContext
 
 
 def main():
-  contextName = "TextContext"
+  contextName = "TestContext"
   phonesTableFile = "/usr/skiptest/phones.txt"
   wordsTableFile = "/usr/skiptest/words.txt"
   lexiconFile = "/usr/skiptest/lexicon.txt"
   trainTranscripts = "/usr/skiptest/train_si84/text"
-
+  lmArpa = "/usr/skiptest/bg5k.arpa"
 
   context = KaldiContext(contextName)
 

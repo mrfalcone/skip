@@ -85,9 +85,9 @@ class KaldiContext(object):
 
 
 
-  def makeG(self, L, transcripts, interpolateestimates = True,
-    ngramorder=3, keepunknowns = True, rmillegalseqences = True,
-    limitvocab = False):
+  def makeG(self, L, transcripts, interpolateestimates=True,
+    ngramorder=3, keepunknowns=True, rmillegalseqences=True,
+    limitvocab=False):
     """
     Creates a grammar FST for decoding graph creation.
 
@@ -100,6 +100,18 @@ class KaldiContext(object):
     *transcripts* must be a list of utterance transcripts in Kaldi archive
     text format, with utterance id as key
 
+    If *interpolateestimates* is True, word estimates will be interpolated
+    across *ngram* orders.
+
+    If *keepunknowns* is True, oov words are kept as unknown words in
+    the language model.
+
+    If *rmillegalseqences* is True, illegal sequences of sentence start/end
+    symbols will be removed from the arpa file.
+
+    If *limitvocab* is True, vocabulary in the LM will be limited
+    to the words in L's corresponding words symbol table.
+
     Returns an object representing the G graph.
     """
     return kaldi.makeGGraph(self.dirname, L.wordsfile, transcripts,
@@ -110,20 +122,13 @@ class KaldiContext(object):
 
 
 
-  def makeGArpa(self, L, arpafile):
+  def makeGArpa(self, L, arpafile, rmillegalseqences=True):
     """
-    Creates a grammar FST for decoding graph creation using the
-    language model from the specified ARPA file.
-
-    *L* must be an object representing the lexicon FST that will be
-    composed with this G
-
-    *arpafile* must be a language model in ARPA text format
-
-    Returns an object representing the G graph.
+    Like makeG but creates an FST using the language model
+    from the specified ARPA file instead of creating one.
     """
-    raise NotImplementedError()
-    return kaldi.makeGGraphArpa()
+    return kaldi.makeGGraphArpa(self.dirname, L.wordsfile, arpafile,
+      rmillegalseqences)
 
 
 

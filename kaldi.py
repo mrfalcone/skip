@@ -3,13 +3,13 @@ Defines methods for interfacing with Kaldi binaries.
 """
 __license__ = "Apache License, Version 2.0"
 
-from os import path
+from os import path,remove
 from string import split,strip
 from shutil import copy2
 from collections import deque
 from subprocess import Popen,PIPE
 from math import log
-from tempfile import mkdtemp
+from tempfile import mkdtemp,NamedTemporaryFile
 from shutil import rmtree
 
 from util import (KaldiObject, _randFilename, _getCachedObject,
@@ -202,20 +202,9 @@ def makeGGraph(directory, wordsfile, transcripts, interpolateestimates,
     config.fstprint, fstFile)
 
   compileFstCmd = "{0} --isymbols={1} --osymbols={1} \
-    --keep_isymbols=false --keep_osymbols=false".format(config.fstcompile,
-      wordsfile)
-  
-  compileFstCmd = "{0} | {1} > \"{2}\"".format(compileFstCmd,
-    config.fstrmepsilon, G.filename)
-
-
-
-  # remove illegal sos and eos sequences
-  illegalSeqs = []
-  if rmillegalseqences:
-    illegalSeqs.append("{0} {1}".format(config.SOS_WORD, config.SOS_WORD))
-    illegalSeqs.append("{0} {1}".format(config.EOS_WORD, config.SOS_WORD))
-    illegalSeqs.append("{0} {1}".format(config.EOS_WORD, config.EOS_WORD))
+    --keep_isymbols=false --keep_osymbols=false | \
+    {2} > \"{3}\"".format(config.fstcompile,
+      wordsfile, config.fstrmepsilon, G.filename)
 
   # prepare vocab for SRILM
   vocab = {}
@@ -240,11 +229,18 @@ def makeGGraph(directory, wordsfile, transcripts, interpolateestimates,
         trainOut.write("{0}\n".format(" ".join(words)))
 
 
+   # remove illegal sos and eos sequences
+  illegalSeqs = []
+  if rmillegalseqences:
+    illegalSeqs.append("{0} {1}".format(config.SOS_WORD, config.SOS_WORD))
+    illegalSeqs.append("{0} {1}".format(config.EOS_WORD, config.SOS_WORD))
+    illegalSeqs.append("{0} {1}".format(config.EOS_WORD, config.EOS_WORD))
+
   logFile = open(path.join(Gdir, _randFilename(suffix=".log")), "w")
 
   try:
     # make LM and create text fst from it
-    Popen(makeNgramCmd, shell=True).communicate()
+    Popen(makeNgramCmd, stderr=logFile, shell=True).communicate()
     makeFstProc = Popen(makeFstCmd, stdin=PIPE, stderr=logFile, shell=True)
 
     with open(lmFile, "r") as lmIn:
@@ -288,4 +284,104 @@ def makeGGraph(directory, wordsfile, transcripts, interpolateestimates,
 
   return _cacheObject(G, idxFile)
 
+
+
+def makeGGraphArpa(directory, wordsfile, arpafile, rmillegalseqences):
+
+  Gdir = path.join(directory, "GGraphsArpa")
+  (G, idxFile) = _getCachedObject(Gdir, str(locals()))
+  
+  
+  # check file modification time to see if a refresh is required
+  origNames = []
+  copyNames = []
+  try:
+    origNames.append(wordsfile)
+    copyNames.append(G.wordsfile)
+  except AttributeError:
+    copyNames.append(None)
+  try:
+    origNames.append(arpafile)
+    copyNames.append(G.arpafile)
+  except AttributeError:
+    copyNames.append(None)
+
+  if not _refreshRequired(zip(origNames, copyNames)):
+    return G
+
+
+
+  # copy source files
+  G.wordsfile = path.join(Gdir, _randFilename("words-", ".txt"))
+  G.arpafile = path.join(Gdir, _randFilename("lm-", ".arpa"))
+  G.filename = path.join(Gdir, _randFilename("G-", ".fst"))
+
+  copy2(wordsfile, G.wordsfile)
+  copy2(arpafile, G.arpafile)
+
+
+  tmp = NamedTemporaryFile(suffix=".txt", delete=False)
+  fstFile = tmp.name
+  tmp.close()
+  makeFstCmd = "{0} - | {1} - \"{2}\"".format(config.arpa2fst,
+    config.fstprint, fstFile)
+
+  compileFstCmd = "{0} --isymbols={1} --osymbols={1} \
+    --keep_isymbols=false --keep_osymbols=false | \
+    {2} > \"{3}\"".format(config.fstcompile,
+      wordsfile, config.fstrmepsilon, G.filename)
+
+
+  # remove illegal sos and eos sequences
+  illegalSeqs = []
+  if rmillegalseqences:
+    illegalSeqs.append("{0} {1}".format(config.SOS_WORD, config.SOS_WORD))
+    illegalSeqs.append("{0} {1}".format(config.EOS_WORD, config.SOS_WORD))
+    illegalSeqs.append("{0} {1}".format(config.EOS_WORD, config.EOS_WORD))
+
+
+  logFile = open(path.join(Gdir, _randFilename(suffix=".log")), "w")
+
+  try:
+    makeFstProc = Popen(makeFstCmd, stdin=PIPE, stderr=logFile, shell=True)
+
+    with open(G.arpafile, "r") as lmIn:
+      for line in lmIn:
+        legal = True
+        for seq in illegalSeqs:
+          if seq in line:
+            legal = False
+            break
+        if legal:
+          makeFstProc.stdin.write(line)
+
+    makeFstProc.stdin.close()
+    makeFstProc.wait()
+
+
+    # read text fst, replace symbols, and send to compiler process,
+    #  which will output to stdout
+    compileFstProc = Popen(compileFstCmd, stdin=PIPE, stderr=logFile, shell=True)
+
+    with open(fstFile, "r") as fstIn:
+      for line in fstIn:
+        parts = split(line)
+        if len(parts) >= 4:
+          if parts[2] == config.EPS:
+            parts[2] = config.EPS_G
+          elif parts[2] == config.SOS_WORD or parts[2] == config.EOS_WORD:
+            parts[2] = config.EPS
+          if parts[3] == config.SOS_WORD or parts[3] == config.EOS_WORD:
+            parts[3] = config.EPS
+        compileFstProc.stdin.write("{0}\n".format(" ".join(parts)))
+
+    compileFstProc.stdin.close()
+    compileFstProc.wait()
+
+  finally:
+    logFile.close()
+
+  remove(fstFile)
+
+  return _cacheObject(G, idxFile)
 
