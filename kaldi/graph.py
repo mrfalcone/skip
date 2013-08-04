@@ -431,6 +431,12 @@ def makeHCLGGraph(directory, lexfst, phonesfile,
     return HCLG
 
 
+  # remove old files
+  try:
+    remove(HCLG.filename)
+  except (OSError, AttributeError):
+    pass
+
 
   HCLG.lexfst_time = int(path.getmtime(lexfst))
   HCLG.phonesfile_time = int(path.getmtime(phonesfile))

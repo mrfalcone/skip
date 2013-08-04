@@ -121,6 +121,22 @@ try:
   applycmvn = userconf.applycmvn
 except AttributeError:
   applycmvn = "{0}/src/featbin/apply-cmvn".format(KALDI_DIR)
+try:
+  gmmdecode = userconf.gmmdecode
+except AttributeError:
+  gmmdecode = "{0}/src/gmmbin/gmm-decode-faster".format(KALDI_DIR)
+try:
+  alitophones = userconf.alitophones
+except AttributeError:
+  alitophones = "{0}/src/bin/ali-to-phones".format(KALDI_DIR)
+try:
+  phonestoprons = userconf.phonestoprons
+except AttributeError:
+  phonestoprons = "{0}/src/bin/phones-to-prons".format(KALDI_DIR)
+try:
+  pronstowordali = userconf.pronstowordali
+except AttributeError:
+  pronstowordali = "{0}/src/bin/prons-to-wordali".format(KALDI_DIR)
 
 
 
@@ -150,3 +166,21 @@ try:
   EPS_G = userconf.EPS_G
 except AttributeError:
   EPS_G = "#0"
+try:
+  WORD_BOUND_L = userconf.WORD_BOUND_L
+except AttributeError:
+  WORD_BOUND_L = "#1"
+try:
+  WORD_BOUND_R = userconf.WORD_BOUND_R
+except AttributeError:
+  WORD_BOUND_R = "#2"
+try:
+  DECODE_OOV_WORD = userconf.DECODE_OOV_WORD
+except AttributeError:
+  DECODE_OOV_WORD = "<SPOKEN-NOISE>"
+try:
+  DECODE_OOV_PHONE = userconf.DECODE_OOV_PHONE
+except AttributeError:
+  DECODE_OOV_PHONE = "SPN"
+
+
