@@ -73,6 +73,40 @@ try:
   ngramcount = userconf.ngramcount
 except AttributeError:
   ngramcount = "{0}/lm/bin/{1}/ngram-count".format(SRILM_DIR, SRILM_MACHINE)
+try:
+  makehtransducer = userconf.makehtransducer
+except AttributeError:
+  makehtransducer = "{0}/src/bin/make-h-transducer".format(KALDI_DIR)
+try:
+  fsttablecompose = userconf.fsttablecompose
+except AttributeError:
+  fsttablecompose = "{0}/src/fstbin/fsttablecompose".format(KALDI_DIR)
+try:
+  fstdeterminizestar = userconf.fstdeterminizestar
+except AttributeError:
+  fstdeterminizestar = "{0}/src/fstbin/fstdeterminizestar".format(KALDI_DIR)
+try:
+  fstminimizeencoded = userconf.fstminimizeencoded
+except AttributeError:
+  fstminimizeencoded = "{0}/src/fstbin/fstminimizeencoded".format(KALDI_DIR)
+try:
+  fstcomposecontext = userconf.fstcomposecontext
+except AttributeError:
+  fstcomposecontext = "{0}/src/fstbin/fstcomposecontext".format(KALDI_DIR)
+try:
+  fstrmsymbols = userconf.fstrmsymbols
+except AttributeError:
+  fstrmsymbols = "{0}/src/fstbin/fstrmsymbols".format(KALDI_DIR)
+try:
+  fstrmepslocal = userconf.fstrmepslocal
+except AttributeError:
+  fstrmepslocal = "{0}/src/fstbin/fstrmepslocal".format(KALDI_DIR)
+try:
+  addselfloops = userconf.addselfloops
+except AttributeError:
+  addselfloops = "{0}/src/bin/add-self-loops".format(KALDI_DIR)
+
+
 
 
 

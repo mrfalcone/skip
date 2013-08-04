@@ -1,5 +1,5 @@
 """
-Defines methods for interfacing with Kaldi binaries.
+Defines methods for creating Kaldi decoding graphs.
 """
 __license__ = "Apache License, Version 2.0"
 
@@ -67,12 +67,12 @@ def makeLGraph(directory, phonesfile, wordsfile, lexiconfile,
 
   with open(L.phonesfile, "r") as f:
     for line in f:
-      if line.startswith("{0} ".format(config.EPS)):
+      if line.startswith("{0} ".format(config.EPS_G)):
         phoneWordDisambig = strip(line[line.index(" "):])
         break
   with open(L.wordsfile, "r") as f:
     for line in f:
-      if line.startswith("{0} ".format(config.EPS)):
+      if line.startswith("{0} ".format(config.EPS_G)):
         wordDisambig = strip(line[line.index(" "):])
         break
     makeCmd = "{0} | {1} \"echo {2}|\" \"echo {3}|\"".format(makeCmd,
@@ -384,4 +384,112 @@ def makeGGraphArpa(directory, wordsfile, arpafile, rmillegalseqences):
   remove(fstFile)
 
   return _cacheObject(G, idxFile)
+
+
+
+
+
+
+def makeHCLGGraph(directory, lexfst, phonesfile,
+  grammarfst, mdlfile, treefile, transitionscale,
+  loopscale, contextsize, centralposition):
+
+  HCLGdir = path.join(directory, "HCLGGraphs")
+  (HCLG, idxFile) = _getCachedObject(HCLGdir, str(locals()))
+  
+
+  # check file modification times instead of copying like for other graphs
+  refreshRequired = False
+  try:
+    if int(path.getmtime(lexfst)) > HCLG.lexfst_time:
+      refreshRequired = True
+  except AttributeError:
+    refreshRequired = True
+  try:
+    if int(path.getmtime(phonesfile)) > HCLG.phonesfile_time:
+      refreshRequired = True
+  except AttributeError:
+    refreshRequired = True
+  try:
+    if int(path.getmtime(grammarfst)) > HCLG.grammarfst_time:
+      refreshRequired = True
+  except AttributeError:
+    refreshRequired = True
+  try:
+    if int(path.getmtime(treefile)) > HCLG.treefile_time:
+      refreshRequired = True
+  except AttributeError:
+    refreshRequired = True
+  try:
+    if int(path.getmtime(mdlfile)) > HCLG.mdlfile_time:
+      refreshRequired = True
+  except AttributeError:
+    refreshRequired = True
+
+
+  if not refreshRequired:
+    return HCLG
+
+
+
+  HCLG.lexfst_time = int(path.getmtime(lexfst))
+  HCLG.phonesfile_time = int(path.getmtime(phonesfile))
+  HCLG.grammarfst_time = int(path.getmtime(grammarfst))
+  HCLG.treefile_time = int(path.getmtime(treefile))
+  HCLG.mdlfile_time = int(path.getmtime(mdlfile))
+  HCLG.filename = path.join(HCLGdir, _randFilename("HCLG-", ".fst"))
+
+
+  # create directory for temp files
+  tmpDir = mkdtemp()
+  disambigSymFile = "{0}/disambig.sym".format(tmpDir)
+  ilabelRemapFile = "{0}/ilabel.remap".format(tmpDir)
+  disambigTidFile = "{0}/disambig.tid".format(tmpDir)
+  clgOutFile = "{0}/CLG.fst".format(tmpDir)
+  haOutFile = "{0}/Ha.fst".format(tmpDir)
+
+
+  # read disambig phone symbols
+  with open(phonesfile, "r") as phonesIn:
+    with open(disambigSymFile, "w") as disambigSymbolsOut:
+      for line in phonesIn:
+        if line.startswith("#"):
+          try:
+            int(line[1:line.index(" ")])
+            disambigSymbolsOut.write("{0}\n".format(line[line.index(" ")+1:]))
+          except ValueError:
+            continue
+
+
+
+  # prepare graph creation commands
+  makeClgCmd = "{0} {1} {2} | {3} --use-log=true | {4} | {5} --context-size={6} \
+    --central-position={7} --read-disambig-syms={8} {9} > {10}".format(config.fsttablecompose, lexfst,
+      grammarfst, config.fstdeterminizestar, config.fstminimizeencoded, config.fstcomposecontext,
+      contextsize, centralposition, disambigSymFile, ilabelRemapFile, clgOutFile)
+
+  makeHaCmd = "{0} --disambig-syms-out={1} --transition-scale={2} {3} \
+    {4} {5} > {6}".format(config.makehtransducer, disambigTidFile,
+      transitionscale, ilabelRemapFile, treefile, mdlfile, haOutFile)
+
+  makeHclgCmd = "{0} {1} {2} | {3} --use-log=true | {4} {5} | {6} | \
+    {7} | {8} --self-loop-scale={9} --reorder=true {10} > {11}".format(config.fsttablecompose,
+      haOutFile, clgOutFile, config.fstdeterminizestar, config.fstrmsymbols, disambigTidFile,
+      config.fstrmepslocal, config.fstminimizeencoded, config.addselfloops,
+      loopscale, mdlfile, HCLG.filename)
+
+
+  logFile = open(path.join(HCLGdir, _randFilename(suffix=".log")), "w")
+
+  try:
+    Popen(makeClgCmd, stderr=logFile, shell=True).communicate()
+    Popen(makeHaCmd, stderr=logFile, shell=True).communicate()
+    Popen(makeHclgCmd, stderr=logFile, shell=True).communicate()
+  finally:
+    logFile.close()
+
+  rmtree(tmpDir, True)
+  
+
+  return _cacheObject(HCLG, idxFile)
 

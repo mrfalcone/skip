@@ -6,7 +6,7 @@ __license__ = "Apache License, Version 2.0"
 from os import path
 from util import KaldiObject
 import config
-import kaldi
+from kaldi import graphs
 
 
 
@@ -44,18 +44,18 @@ class KaldiContext(object):
     """
     Creates a lexicon FST for decoding graph creation.
 
-    *phonesfile* must be a text OpenFST symbol table defining phone symbols
+    *phonesfile* must be a text OpenFST symbol table defining phone symbols.
 
-    *wordsfile* must be a text OpenFST symbol table defining word symbols
+    *wordsfile* must be a text OpenFST symbol table defining word symbols.
 
-    *lexiconfile* must be a text file mapping words to phone sequences
+    *lexiconfile* must be a text file mapping words to phone sequences.
 
     If *addsilence* is True, transitions to silence are added at
     the end of each word with probability given by *silenceprobability*.
 
     Returns an object representing the L graph.
     """
-    return kaldi.makeLGraph(self.dirname, phonesfile, wordsfile,
+    return graphs.makeLGraph(self.dirname, phonesfile, wordsfile,
       lexiconfile, addsilence, silenceprobability)
 
 
@@ -69,9 +69,9 @@ class KaldiContext(object):
     *fstfile* must be a binary, arc sorted lexicon FST created as described
     at http://kaldi.sourceforge.net/graph_recipe_test.html
 
-    *phonesfile* must be a text OpenFST symbol table defining phone symbols
+    *phonesfile* must be a text OpenFST symbol table defining phone symbols.
 
-    *wordsfile* must be a text OpenFST symbol table defining word symbols
+    *wordsfile* must be a text OpenFST symbol table defining word symbols.
 
     Returns an object representing the L graph.
     """
@@ -95,10 +95,10 @@ class KaldiContext(object):
     *transcripts* using modified Kneser-Ney discounting.
 
     *L* must be an object representing the lexicon FST that will be
-    composed with this G
+    composed with this G.
 
     *transcripts* must be a list of utterance transcripts in Kaldi archive
-    text format, with utterance id as key
+    text format, with utterance id as key.
 
     If *interpolateestimates* is True, word estimates will be interpolated
     across *ngram* orders.
@@ -114,7 +114,7 @@ class KaldiContext(object):
 
     Returns an object representing the G graph.
     """
-    return kaldi.makeGGraph(self.dirname, L.wordsfile, transcripts,
+    return graphs.makeGGraph(self.dirname, L.wordsfile, transcripts,
       interpolateestimates, ngramorder, keepunknowns, rmillegalseqences,
       limitvocab)
 
@@ -127,7 +127,7 @@ class KaldiContext(object):
     Like makeG but creates an FST using the language model
     from the specified ARPA file instead of creating one.
     """
-    return kaldi.makeGGraphArpa(self.dirname, L.wordsfile, arpafile,
+    return graphs.makeGGraphArpa(self.dirname, L.wordsfile, arpafile,
       rmillegalseqences)
 
 
@@ -150,14 +150,75 @@ class KaldiContext(object):
 
 
 
+  def makeHCLG(self, L, G, mdl, contextsize=3, centralposition=1,
+    transitionscale=1.0, loopscale=0.1):
+    """
+    Creates the final decoding graph.
+
+    *L* and *G* must be kaldi objects representing
+    those FSTs.
+
+    *mdl* must be the kaldi object representing the
+    GMM-based model acoustic model.
+
+    *contextsize* is the size of the phone window for C.
+
+    *centralposition* is the center of the context window for C.
+
+    *transitionscale* specifies the transition scale for
+    the H transducer.
+
+    *loopscale* specifies the self loop scale for the
+    final graph.
+
+    Returns an object representing the HCLG graph.
+    """
+    return graphs.makeHCLGGraph(self.dirname, L.filename, L.phonesfile,
+      G.filename, mdl.filename, mdl.treefile, transitionscale,
+      loopscale, contextsize, centralposition)
 
 
 
 
+  def addHCLG(self, fstfile):
+    """
+    Adds an existing final decoding FST to the context.
 
-  def makeAcousticModel():
-    raise NotImplementedError()
+    *fstfile* must be a binary, minimized HCLG FST with self loops,
+    created as described at http://kaldi.sourceforge.net/graph_recipe_test.html
+
+    Returns an object representing the HCLG graph.
+    """
+    HCLG = KaldiObject()
+    HCLG.filename = fstfile
+    return HCLG
 
 
-  def addAcousticModel():
-    raise NotImplementedError()
+
+
+  def makeGMM(self):
+    """
+    Creates a new GMM-based model.
+
+    Returns an object representing the model and tree.
+    """
+    raise NotImplementedError() 
+
+
+
+
+  def addGMM(self, gmmfile, treefile):
+    """
+    Adds an existing GMM-based model to the context.
+
+    *gmmfile* must be the GMM model file.
+
+    *treefile* must be a Kaldi decision tree file
+    corresponding to the model.
+
+    Returns an object representing the model and tree.
+    """
+    mdl = KaldiObject()
+    mdl.filename = gmmfile
+    mdl.treefile = treefile
+    return mdl
