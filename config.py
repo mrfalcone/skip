@@ -33,6 +33,12 @@ try:
 except AttributeError:
   SRILM_DIR = None
 
+try:
+  SRILM_MACHINE = userconf.SRILM_MACHINE
+except AttributeError:
+  SRILM_MACHINE = "i686-m64"
+
+
 
 # kaldi/openfst/srilm binary paths
 try:
@@ -51,5 +57,47 @@ try:
   fstaddselfloops = userconf.fstaddselfloops
 except AttributeError:
   fstaddselfloops = "{0}/src/fstbin/fstaddselfloops".format(KALDI_DIR)
+try:
+  arpa2fst = userconf.arpa2fst
+except AttributeError:
+  arpa2fst = "{0}/src/bin/arpa2fst".format(KALDI_DIR)
+try:
+  fstprint = userconf.fstprint
+except AttributeError:
+  fstprint = "{0}/src/bin/fstprint".format(OPENFST_DIR)
+try:
+  fstrmepsilon = userconf.fstrmepsilon
+except AttributeError:
+  fstrmepsilon = "{0}/src/bin/fstrmepsilon".format(OPENFST_DIR)
+try:
+  ngramcount = userconf.ngramcount
+except AttributeError:
+  ngramcount = "{0}/lm/bin/{1}/ngram-count".format(SRILM_DIR, SRILM_MACHINE)
 
 
+
+# symbol configurations
+try:
+  SIL_PHONE = userconf.SIL_PHONE
+except AttributeError:
+  SIL_PHONE = "SIL"
+try:
+  EPS = userconf.EPS
+except AttributeError:
+  EPS = "<eps>"
+try:
+  UNKNOWN_WORD = userconf.UNKNOWN_WORD
+except AttributeError:
+  UNKNOWN_WORD = "<UNK>"
+try:
+  SOS_WORD = userconf.SOS_WORD
+except AttributeError:
+  SOS_WORD = "<s>"
+try:
+  EOS_WORD = userconf.EOS_WORD
+except AttributeError:
+  EOS_WORD = "</s>"
+try:
+  EPS_G = userconf.EPS_G
+except AttributeError:
+  EPS_G = "#0"

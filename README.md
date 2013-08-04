@@ -44,5 +44,7 @@ Installing and Configuring
 
 Example Usage
 ----
-TODO
+TODO:
+* Simple experiments
+* Using Kaldi tools with skip objects
 

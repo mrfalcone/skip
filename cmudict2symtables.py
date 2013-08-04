@@ -212,17 +212,15 @@ def main():
             phonesOut.write("{0}_S {1}\n".format(sym, symbolId))
             symbolId += 1
         # write disambig symbols
-        phonesOut.write("#{0} {1}\n".format(0, symbolId))
+        phonesOut.write("{0} {1}\n".format(wordDisambig, symbolId))
         symbolId += 1
-        nextSym = 1
         if addWordBoundaries:
-          phonesOut.write("#{0} {1}\n".format(1, symbolId))
+          phonesOut.write("{0} {1}\n".format(wboundLeft, symbolId))
           symbolId += 1
-          phonesOut.write("#{0} {1}\n".format(2, symbolId))
+          phonesOut.write("{0} {1}\n".format(wboundRight, symbolId))
           symbolId += 1
-          nextSym += 2
         if addDisambigSymbols:
-          for i in range(nextSym, maxDisambigId + 1):
+          for i in range(3, maxDisambigId + 1):
             phonesOut.write("#{0} {1}\n".format(i, symbolId))
             symbolId += 1
             

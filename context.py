@@ -32,7 +32,7 @@ class KaldiContext(object):
     """
     Initializes a new Kaldi context with the specified name.
     """
-    self.dirname = path.join(config.CONTEXTS_DIR, "name")
+    self.dirname = path.join(config.CONTEXTS_DIR, name)
 
 
 
@@ -40,7 +40,7 @@ class KaldiContext(object):
 
 
   def makeL(self, phonesfile, wordsfile, lexiconfile, addsilence = True,
-    silencephone = "SIL", silenceprobability = 0.5):
+    silenceprobability = 0.5):
     """
     Creates a lexicon FST for decoding graph creation.
 
@@ -50,13 +50,13 @@ class KaldiContext(object):
 
     *lexiconfile* must be a text file mapping words to phone sequences
 
-    If *addsilence* is True, transitions to *silencephone* are added at
+    If *addsilence* is True, transitions to silence are added at
     the end of each word with probability given by *silenceprobability*.
 
     Returns an object representing the L graph.
     """
     return kaldi.makeLGraph(self.dirname, phonesfile, wordsfile,
-      lexiconfile, addsilence, silencephone, silenceprobability)
+      lexiconfile, addsilence, silenceprobability)
 
 
 
@@ -80,3 +80,79 @@ class KaldiContext(object):
     L.phonesfile = phonesfile
     L.wordsfile = wordsfile
     return L
+
+
+
+
+
+  def makeG(self, L, transcripts, interpolateestimates = True,
+    ngramorder=3, keepunknowns = True, rmillegalseqences = True,
+    limitvocab = False):
+    """
+    Creates a grammar FST for decoding graph creation.
+
+    Uses SRILM to generate an ngram language model from
+    *transcripts* using modified Kneser-Ney discounting.
+
+    *L* must be an object representing the lexicon FST that will be
+    composed with this G
+
+    *transcripts* must be a list of utterance transcripts in Kaldi archive
+    text format, with utterance id as key
+
+    Returns an object representing the G graph.
+    """
+    return kaldi.makeGGraph(self.dirname, L.wordsfile, transcripts,
+      interpolateestimates, ngramorder, keepunknowns, rmillegalseqences,
+      limitvocab)
+
+
+
+
+
+  def makeGArpa(self, L, arpafile):
+    """
+    Creates a grammar FST for decoding graph creation using the
+    language model from the specified ARPA file.
+
+    *L* must be an object representing the lexicon FST that will be
+    composed with this G
+
+    *arpafile* must be a language model in ARPA text format
+
+    Returns an object representing the G graph.
+    """
+    raise NotImplementedError()
+    return kaldi.makeGGraphArpa()
+
+
+
+
+
+  def addG(self, fstfile):
+    """
+    Adds an existing grammar FST to the context.
+
+    *fstfile* must be a binary grammar FST created as described
+    at http://kaldi.sourceforge.net/graph_recipe_test.html
+
+    Returns an object representing the G graph.
+    """
+    G = KaldiObject()
+    G.filename = fstfile
+    return G
+
+
+
+
+
+
+
+
+
+  def makeAcousticModel():
+    raise NotImplementedError()
+
+
+  def addAcousticModel():
+    raise NotImplementedError()
