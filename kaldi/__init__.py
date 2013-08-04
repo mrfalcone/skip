@@ -2,6 +2,8 @@
 Defines methods for interfacing with Kaldi binaries.
 """
 __license__ = "Apache License, Version 2.0"
-__all__ = ["graphs"]
+__all__ = ["graph", "feat", "gmm"]
 
-import graphs
+import graph
+import feat
+import gmm

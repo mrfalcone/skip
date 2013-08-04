@@ -6,7 +6,7 @@ __license__ = "Apache License, Version 2.0"
 from os import path
 from util import KaldiObject
 import config
-from kaldi import graphs
+from kaldi import *
 
 
 
@@ -55,7 +55,7 @@ class KaldiContext(object):
 
     Returns an object representing the L graph.
     """
-    return graphs.makeLGraph(self.dirname, phonesfile, wordsfile,
+    return graph.makeLGraph(self.dirname, phonesfile, wordsfile,
       lexiconfile, addsilence, silenceprobability)
 
 
@@ -114,7 +114,7 @@ class KaldiContext(object):
 
     Returns an object representing the G graph.
     """
-    return graphs.makeGGraph(self.dirname, L.wordsfile, transcripts,
+    return graph.makeGGraph(self.dirname, L.wordsfile, transcripts,
       interpolateestimates, ngramorder, keepunknowns, rmillegalseqences,
       limitvocab)
 
@@ -127,7 +127,7 @@ class KaldiContext(object):
     Like makeG but creates an FST using the language model
     from the specified ARPA file instead of creating one.
     """
-    return graphs.makeGGraphArpa(self.dirname, L.wordsfile, arpafile,
+    return graph.makeGGraphArpa(self.dirname, L.wordsfile, arpafile,
       rmillegalseqences)
 
 
@@ -173,7 +173,7 @@ class KaldiContext(object):
 
     Returns an object representing the HCLG graph.
     """
-    return graphs.makeHCLGGraph(self.dirname, L.filename, L.phonesfile,
+    return graph.makeHCLGGraph(self.dirname, L.filename, L.phonesfile,
       G.filename, mdl.filename, mdl.treefile, transitionscale,
       loopscale, contextsize, centralposition)
 
