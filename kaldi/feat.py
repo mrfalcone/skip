@@ -5,6 +5,7 @@ __license__ = "Apache License, Version 2.0"
 
 from os import path,remove
 from shutil import copy2
+from string import strip
 from subprocess import Popen
 from tempfile import NamedTemporaryFile
 
@@ -20,6 +21,19 @@ def makeMfccFeats(directory, wavscp, samplefreq, useenergy, applycmvn,
   Mfccdir = path.join(directory, "MfccFeats")
   (feats, idxFile) = _getCachedObject(Mfccdir, str(locals()))
   
+
+  # check wave files to make sure they are up to date
+  wavsOld = False
+  try:
+    mtimes = feats.wav_times
+    for wavFile in mtimes.keys():
+      if int(path.getmtime(wavFile)) > mtimes[wavFile]:
+        wavsOld = True
+        break
+  except AttributeError:
+    pass
+
+
   # check file modification time to see if a refresh is required
   origNames = []
   copyNames = []
@@ -41,13 +55,21 @@ def makeMfccFeats(directory, wavscp, samplefreq, useenergy, applycmvn,
     except AttributeError:
       copyNames.append(None)
 
-  if not _refreshRequired(zip(origNames, copyNames)):
+  if not _refreshRequired(zip(origNames, copyNames)) and not wavsOld:
     return feats
 
 
   feats.filename = path.join(Mfccdir, _randFilename("feats-", ".ark"))
   feats.wavscp = path.join(Mfccdir, _randFilename("wav-", ".scp"))
   copy2(wavscp, feats.wavscp)
+
+  feats.wav_times = {}
+  with open(feats.wavscp, "r") as wavsIn:
+    for line in wavsIn:
+      if "|" not in line: # ignore commands in the table
+        fname = strip(line[line.index(" "):])
+        feats.wav_times[fname] = int(path.getmtime(fname))
+
 
   if utt2spk and spk2utt:
     feats.utt2spk = path.join(Mfccdir, _randFilename("utt2spk-", ".ark"))
