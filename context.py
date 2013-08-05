@@ -3,7 +3,9 @@ Defines objects and methods for interacting with Kaldi contexts.
 """
 __license__ = "Apache License, Version 2.0"
 
-from os import path
+from os import path,remove,walk
+from shutil import rmtree
+
 from util import KaldiObject
 import config
 from kaldi import *
@@ -30,6 +32,34 @@ class KaldiContext(object):
     """
     self.dirname = path.join(config.CONTEXTS_DIR, name)
 
+
+
+  def destroy(self):
+    """
+    Removes the directory associated with the context and
+    destroys all its files.
+    """
+    try:
+      rmtree(self.dirname)
+    except OSError:
+      pass
+
+
+
+  def rmLogs(self):
+    """
+    Deletes all log files associated with the context.
+    """
+    try:
+      logs = []
+      for (dirpath, dirnames, filenames) in walk(mypath):
+        for f in filenames:
+          if f.endswith(".log"):
+            logs.append(f)
+      for f in logs:
+        remove(f)
+    except OSError:
+      pass
 
 
 

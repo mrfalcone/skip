@@ -9,7 +9,6 @@ from context import KaldiContext
 
 
 def main():
-  contextName = "TestContext"
   phonesTableFile = "/usr/skiptest/phones.txt"
   wordsTableFile = "/usr/skiptest/words.txt"
   lexiconFile = "/usr/skiptest/lexicon.txt"
@@ -27,7 +26,7 @@ def main():
 
 
 
-  context = KaldiContext(contextName)
+  context = KaldiContext("TestContext")
 
   print "Creating lexicon..."
   t0 = time()
@@ -71,6 +70,11 @@ def main():
   print "Done in {0:0.2f} seconds.".format(time() - t0)
   print
 
+
+  # print text hypothesis
+  with open(hyp.filename) as f:
+    for line in f:
+      print line
 
 
 

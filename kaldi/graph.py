@@ -5,12 +5,11 @@ __license__ = "Apache License, Version 2.0"
 
 from os import path,remove
 from string import split,strip
-from shutil import copy2
+from shutil import copy2,rmtree
 from collections import deque
 from subprocess import Popen,PIPE
 from math import log
-from tempfile import mkdtemp,NamedTemporaryFile
-from shutil import rmtree
+from tempfile import mkdtemp,NamedTemporaryFile 
 
 from util import (KaldiObject, _randFilename, _getCachedObject,
   _cacheObject, _refreshRequired)
