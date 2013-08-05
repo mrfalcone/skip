@@ -7,15 +7,19 @@ from os import path
 from sys import argv,stderr
 from collections import deque
 from string import strip,split
+import locale
+
 
 
 def main():
+  locale.setlocale(locale.LC_ALL, "C")
+
   # default parameters
   addSilNoise = True
-  addPositionMarkers = True
-  addEmptyWord = True
+  addPositionMarkers = False
+  addEmptyWord = False
   addUnknownWord = True
-  addDisambigSymbols = True
+  addDisambigSymbols = False
   addWordBoundaries = False
   silencePhone = "SIL"
   spkNoisePhone = "SPN"
@@ -87,9 +91,9 @@ def main():
     stderr.write("OPTIONS:\n")
     stderr.write("{0}{1}\n".format("--add-silnoise=true|false".ljust(sp), "Adds silence and noise symbols. Default=true."))
     stderr.write("{0}{1}\n".format("--add-unknown=true|false".ljust(sp), "Adds an unknown word symbol. Default=true."))
-    stderr.write("{0}{1}\n".format("--add-empty=true|false".ljust(sp), "Adds empty word symbols. Default=true."))
-    stderr.write("{0}{1}\n".format("--add-position=true|false".ljust(sp), "Adds beginning/end/singleton markers to phones. Default=true."))
-    stderr.write("{0}{1}\n".format("--add-disambig=true|false".ljust(sp), "Adds disambiguation symbols. Default=true."))
+    stderr.write("{0}{1}\n".format("--add-empty=true|false".ljust(sp), "Adds empty word symbols. Default=false."))
+    stderr.write("{0}{1}\n".format("--add-position=true|false".ljust(sp), "Adds beginning/end/singleton markers to phones. Default=false."))
+    stderr.write("{0}{1}\n".format("--add-disambig=true|false".ljust(sp), "Adds disambiguation symbols. Default=false."))
     stderr.write("{0}{1}\n".format("--add-word-bounds=true|false".ljust(sp), "Adds boundary symbols to word pronunciations. Default=false."))
     quit(1)
 
@@ -142,50 +146,55 @@ def main():
 
 
 
-  # write word symbols table and lexicon file
+  # write lexicon file
   maxDisambigId = 0
   curSymbolNumbers = {}
-  wordsSorted = sorted(pronunciationMap.keys())
+  allWords = []
   with open(lexiconFileOut, "w") as lexiconOut:
-    with open(wordsFileOut, "w") as wordsOut:
-      wordsOut.write("{0} {1}\n".format("<eps>", 0))
-      wordId = 1
+    
+    for word in pronunciationMap.keys():
+      pronunciation = pronunciationMap[word]
+      disambigStr = ""
+      if addDisambigSymbols and seqCounts[pronunciation] > 1:
+        if not pronunciation in curSymbolNumbers:
+          if addWordBoundaries:
+            curSymbolNumbers[pronunciation] = 3
+          else:
+            curSymbolNumbers[pronunciation] = 1
 
-      for word in wordsSorted:
-        pronunciation = pronunciationMap[word]
-        disambigStr = ""
-        if addDisambigSymbols and seqCounts[pronunciation] > 1:
-          if not pronunciation in curSymbolNumbers:
-            if addWordBoundaries:
-              curSymbolNumbers[pronunciation] = 3
-            else:
-              curSymbolNumbers[pronunciation] = 1
+        disambigId = curSymbolNumbers[pronunciation]
+        curSymbolNumbers[pronunciation] += 1
+        disambigStr = " #{0}".format(disambigId)
+        if disambigId > maxDisambigId:
+          maxDisambigId = disambigId
 
-          disambigId = curSymbolNumbers[pronunciation]
-          curSymbolNumbers[pronunciation] += 1
-          disambigStr = " #{0}".format(disambigId)
-          if disambigId > maxDisambigId:
-            maxDisambigId = disambigId
+      # remove parenthetical notations
+      if "(" in word:
+        if word.rindex("(") != 0:
+          word = word[:word[1:].index("(") + 1]
 
-        # remove parenthetical notations
-        if "(" in word:
-          if word.rindex("(") != 0:
-            word = word[:word[1:].index("(") + 1]
+      lboundStr = ""
+      rboundStr = ""
+      if addWordBoundaries:
+        lboundStr = "{0} ".format(wboundLeft)
+        rboundStr = " {0}".format(wboundRight)
+      lexiconOut.write("{0} {1}{2}{3}{4}\n".format(word, lboundStr,
+        pronunciation, disambigStr, rboundStr))
+      
+      allWords.append(word)
 
-        lboundStr = ""
-        rboundStr = ""
-        if addWordBoundaries:
-          lboundStr = "{0} ".format(wboundLeft)
-          rboundStr = " {0}".format(wboundRight)
-        lexiconOut.write("{0} {1}{2}{3}{4}\n".format(word, lboundStr,
-          pronunciation, disambigStr, rboundStr))
-        wordsOut.write("{0} {1}\n".format(word, wordId))
-        wordId += 1
 
-      # always write word disambig symbol
-      wordsOut.write("{0} {1}\n".format(wordDisambig, wordId))
+  # write word symbols table
+  allWords = list(set(allWords))
+  allWords.sort(cmp=locale.strcoll)
+  with open(wordsFileOut, "w") as wordsOut:
+    wordsOut.write("{0} {1}\n".format("<eps>", 0))
+    wordId = 1
+    for word in allWords:
+      wordsOut.write("{0} {1}\n".format(word, wordId))
       wordId += 1
-
+    wordsOut.write("{0} {1}\n".format(wordDisambig, wordId))
+    wordId += 1
 
 
   # write phone symbols table
@@ -214,13 +223,15 @@ def main():
         # write disambig symbols
         phonesOut.write("{0} {1}\n".format(wordDisambig, symbolId))
         symbolId += 1
+        disambigStart = 1
         if addWordBoundaries:
           phonesOut.write("{0} {1}\n".format(wboundLeft, symbolId))
           symbolId += 1
           phonesOut.write("{0} {1}\n".format(wboundRight, symbolId))
           symbolId += 1
+          disambigStart = 3
         if addDisambigSymbols:
-          for i in range(3, maxDisambigId + 1):
+          for i in range(disambigStart, maxDisambigId + 1):
             phonesOut.write("#{0} {1}\n".format(i, symbolId))
             symbolId += 1
             

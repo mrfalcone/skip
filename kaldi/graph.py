@@ -22,7 +22,7 @@ import config
 def makeLGraph(directory, phonesfile, wordsfile, lexiconfile,
   addsilence, silenceprobability):
 
-  Ldir = path.join(directory, "LGraphs")
+  Ldir = path.join(directory, "L_graphs")
   (L, idxFile) = _getCachedObject(Ldir, str(locals()))
   
   # check file modification time to see if a refresh is required
@@ -144,7 +144,7 @@ def makeLGraph(directory, phonesfile, wordsfile, lexiconfile,
 def makeGGraph(directory, wordsfile, transcripts, interpolateestimates,
   ngramorder, keepunknowns, rmillegalseqences, limitvocab):
 
-  Gdir = path.join(directory, "GGraphs")
+  Gdir = path.join(directory, "G_graphs")
   (G, idxFile) = _getCachedObject(Gdir, str(locals()))
   
   
@@ -287,7 +287,7 @@ def makeGGraph(directory, wordsfile, transcripts, interpolateestimates,
 
 def makeGGraphArpa(directory, wordsfile, arpafile, rmillegalseqences):
 
-  Gdir = path.join(directory, "GGraphsArpa")
+  Gdir = path.join(directory, "G_graphs_arpa")
   (G, idxFile) = _getCachedObject(Gdir, str(locals()))
   
   
@@ -393,7 +393,7 @@ def makeHCLGGraph(directory, lexfst, phonesfile,
   grammarfst, mdlfile, treefile, transitionscale,
   loopscale, contextsize, centralposition):
 
-  HCLGdir = path.join(directory, "HCLGGraphs")
+  HCLGdir = path.join(directory, "HCLG_graphs")
   (HCLG, idxFile) = _getCachedObject(HCLGdir, str(locals()))
   
 

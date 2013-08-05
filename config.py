@@ -126,6 +126,10 @@ try:
 except AttributeError:
   gmmdecode = "{0}/src/gmmbin/gmm-decode-faster".format(KALDI_DIR)
 try:
+  gmmalign = userconf.gmmalign
+except AttributeError:
+  gmmalign = "{0}/src/gmmbin/gmm-align".format(KALDI_DIR)
+try:
   alitophones = userconf.alitophones
 except AttributeError:
   alitophones = "{0}/src/bin/ali-to-phones".format(KALDI_DIR)
@@ -177,7 +181,7 @@ except AttributeError:
 try:
   DECODE_OOV_WORD = userconf.DECODE_OOV_WORD
 except AttributeError:
-  DECODE_OOV_WORD = "<SPOKEN-NOISE>"
+  DECODE_OOV_WORD = "<SPOKEN_NOISE>"
 try:
   DECODE_OOV_PHONE = userconf.DECODE_OOV_PHONE
 except AttributeError:

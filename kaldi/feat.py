@@ -18,7 +18,7 @@ import config
 def makeMfccFeats(directory, wavscp, samplefreq, useenergy, applycmvn,
   normvars, utt2spk, spk2utt, deltaorder):
 
-  Mfccdir = path.join(directory, "MfccFeats")
+  Mfccdir = path.join(directory, "mfcc_feats")
   (feats, idxFile) = _getCachedObject(Mfccdir, str(locals()))
   
 
