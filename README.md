@@ -9,7 +9,7 @@ Version: 0.1
 
 SKIP is a Python module providing a simple interface to various
 Kaldi functions. It accomplishes this by launching Kaldi binaries
-as separate processes and threads rather than linking with Kaldi
+as separate processes rather than linking with Kaldi
 code. Because of this, the module code is pure Python.
 
 Function results are stored so that subsequent calls to the same function on unmodified files yield cached results immediately.
