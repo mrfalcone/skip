@@ -56,7 +56,7 @@ def main():
   # ======= EXISTING CONTEXT TEST ======================================
   context = KaldiContext("ExistingContext")
 
-  print "Adding lexicons..."
+  print "Adding lexicon FSTs..."
   t0 = time()
   L = context.addL(exLexFst, exPhones, exWords)
   L_align = context.addL(exLexFstAlign, exPhonesAlign, exWordsAlign)
@@ -113,7 +113,7 @@ def main():
   # ======= NEW CONTEXT TEST ===========================================
   context = KaldiContext("NewContext")
 
-  print "Creating new lexicons..."
+  print "Creating new lexicon FSTs..."
   t0 = time()
   L = context.makeL(newPhones, newWords, newLexicon)
   L_align = context.makeL(newPhonesAlign, newWordsAlign, newLexiconAlign)
