@@ -128,6 +128,9 @@ def makeLGraph(directory, phonesfile, wordsfile, lexiconfile,
       makeProc.stdin.write("{0} 0\n".format(loopState))
     makeProc.stdin.close()
     makeProc.wait()
+    retCode = makeProc.poll()
+    if retCode:
+      raise KaldiError(logFile.name)
 
   except:
     makeProc.kill()
@@ -239,7 +242,11 @@ def makeGGraph(directory, wordsfile, transcripts, interpolateestimates,
 
   try:
     # make LM and create text fst from it
-    Popen(makeNgramCmd, stderr=logFile, shell=True).communicate()
+    makeLmProc = Popen(makeNgramCmd, stderr=logFile, shell=True)
+    makeLmProc.communicate()
+    retCode = makeLmProc.poll()
+    if retCode:
+      raise KaldiError(logFile.name)
     makeFstProc = Popen(makeFstCmd, stdin=PIPE, stderr=logFile, shell=True)
 
     with open(lmFile, "r") as lmIn:
@@ -254,6 +261,9 @@ def makeGGraph(directory, wordsfile, transcripts, interpolateestimates,
 
     makeFstProc.stdin.close()
     makeFstProc.wait()
+    retCode = makeFstProc.poll()
+    if retCode:
+      raise KaldiError(logFile.name)
 
 
     # read text fst, replace symbols, and send to compiler process,
@@ -274,6 +284,9 @@ def makeGGraph(directory, wordsfile, transcripts, interpolateestimates,
 
     compileFstProc.stdin.close()
     compileFstProc.wait()
+    retCode = compileFstProc.poll()
+    if retCode:
+      raise KaldiError(logFile.name)
 
   finally:
     logFile.close()
@@ -356,6 +369,9 @@ def makeGGraphArpa(directory, wordsfile, arpafile, rmillegalseqences):
 
     makeFstProc.stdin.close()
     makeFstProc.wait()
+    retCode = makeFstProc.poll()
+    if retCode:
+      raise KaldiError(logFile.name)
 
 
     # read text fst, replace symbols, and send to compiler process,
@@ -376,6 +392,9 @@ def makeGGraphArpa(directory, wordsfile, arpafile, rmillegalseqences):
 
     compileFstProc.stdin.close()
     compileFstProc.wait()
+    retCode = compileFstProc.poll()
+    if retCode:
+      raise KaldiError(logFile.name)
 
   finally:
     logFile.close()
@@ -487,9 +506,24 @@ def makeHCLGGraph(directory, lexfst, phonesfile,
   logFile = open(path.join(HCLGdir, _randFilename(suffix=".log")), "w")
 
   try:
-    Popen(makeClgCmd, stderr=logFile, shell=True).communicate()
-    Popen(makeHaCmd, stderr=logFile, shell=True).communicate()
-    Popen(makeHclgCmd, stderr=logFile, shell=True).communicate()
+    mkGraphProc = Popen(makeClgCmd, stderr=logFile, shell=True)
+    mkGraphProc.communicate()
+    retCode = mkGraphProc.poll()
+    if retCode:
+      raise KaldiError(logFile.name)
+
+    mkGraphProc = Popen(makeHaCmd, stderr=logFile, shell=True)
+    mkGraphProc.communicate()
+    retCode = mkGraphProc.poll()
+    if retCode:
+      raise KaldiError(logFile.name)
+    
+    mkGraphProc = Popen(makeHclgCmd, stderr=logFile, shell=True)
+    mkGraphProc.communicate()
+    retCode = mkGraphProc.poll()
+    if retCode:
+      raise KaldiError(logFile.name)
+    
   finally:
     logFile.close()
 

@@ -9,6 +9,17 @@ from uuid import uuid4
 from string import strip
 
 
+class KaldiError(Exception):
+  """
+  Raised when a Kaldi binary exits without success.
+  """
+  msg = ""
+  def __init__(self, logfilename):
+    self.msg = "Kaldi exited with error. Log file: {0}.".format(logfilename)
+  def __str__(self):
+    return self.msg
+
+
 class KaldiObject(object):
   """
   Represents a Kaldi object, typically a file.

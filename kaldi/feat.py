@@ -10,7 +10,7 @@ from subprocess import Popen
 from tempfile import NamedTemporaryFile
 
 from util import (KaldiObject, _randFilename, _getCachedObject,
-  _cacheObject, _refreshRequired)
+  _cacheObject, _refreshRequired, KaldiError)
 import config
 
 
@@ -115,9 +115,18 @@ def makeMfccFeats(directory, wavscp, samplefreq, useenergy, applycmvn,
   logFile = open(path.join(Mfccdir, _randFilename(suffix=".log")), "w")
 
   try:
-    Popen(makeRawFeatCmd, stderr=logFile, shell=True).communicate()
+    featProc = Popen(makeRawFeatCmd, stderr=logFile, shell=True)
+    featProc.communicate()
+    retCode = featProc.poll()
+    if retCode:
+      raise KaldiError(logFile.name)
+
     if applycmvn:
-      Popen(applyCmvnCmd, stderr=logFile, shell=True).communicate()
+      featProc = Popen(applyCmvnCmd, stderr=logFile, shell=True)
+      featProc.communicate()
+      retCode = featProc.poll()
+      if retCode:
+        raise KaldiError(logFile.name)
   finally:
     logFile.close()
 

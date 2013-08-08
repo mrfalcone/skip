@@ -10,7 +10,7 @@ from tempfile import NamedTemporaryFile
 from shutil import copy2
 
 from util import (KaldiObject, _randFilename, _getCachedObject,
-  _cacheObject, _refreshRequired)
+  _cacheObject, _refreshRequired, KaldiError)
 import config
 
 
@@ -49,6 +49,9 @@ def _align(logFile, mdlfile, intfilename, lexfstalign,
         lensOut.write("{0} {1}\n".format(uttId, " ; ".join(pairsStr)))
   makePhonelensProc.stdout.close()
   makePhonelensProc.wait()
+  retCode = makePhonelensProc.poll()
+  if retCode:
+    raise KaldiError(logFile.name)
 
 
   makeWordlensCmd = "{0} \"{1}\" \"ark:{2}\" ark:- | {3} \"{4}\" \
@@ -80,7 +83,9 @@ def _align(logFile, mdlfile, intfilename, lexfstalign,
         lensOut.write("{0} {1}\n".format(uttId, " ; ".join(pairsStr)))
   makeWordlensProc.stdout.close()
   makeWordlensProc.wait()
-
+  retCode = makeWordlensProc.poll()
+  if retCode:
+    raise KaldiError(logFile.name)
 
 
 
@@ -232,6 +237,9 @@ def decodeFeats(directory, featsfile, graphfile, wordsfile, mdlfile,
           hypOut.write("{0} {1}\n".format(uttId, " ".join(words)))
     decodeProc.stdout.close()
     decodeProc.wait()
+    retCode = decodeProc.poll()
+    if retCode:
+      raise KaldiError(logFile.name)
 
 
     # if alignment symbols were given, compute word and phone lengths
@@ -410,6 +418,9 @@ def alignFeats(directory, featsfile, transfile, wordsfile, lexfst,
           alignProc.stdin.write(translated)
     alignProc.stdin.close()
     alignProc.wait()
+    retCode = alignProc.poll()
+    if retCode:
+      raise KaldiError(logFile.name)
 
 
     _align(logFile, mdlfile, hyp.intfilename, lexfstalign,
