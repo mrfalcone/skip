@@ -177,7 +177,7 @@ class KaldiContext(object):
   def makeHCLG(self, L, G, mdl, contextsize=3, centralposition=1,
     transitionscale=1.0, loopscale=0.1):
     """
-    Creates the final decoding graph.
+    Creates the HCLG graph for decoding.
 
     *L* and *G* must be kaldi objects representing the FSTs
     used to create HCLG. *L* should have disambiguation symbols.
@@ -206,7 +206,7 @@ class KaldiContext(object):
 
   def addHCLG(self, fstfile):
     """
-    Adds an existing final decoding FST to the context.
+    Adds an existing HCLG graph to the context for decoding.
 
     *fstfile* must be a binary, minimized HCLG FST with self loops,
     created as described at http://kaldi.sourceforge.net/graph_recipe_test.html
