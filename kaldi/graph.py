@@ -12,7 +12,7 @@ from math import log
 from tempfile import mkdtemp,NamedTemporaryFile 
 
 from skip.util import (KaldiObject, _randFilename, _getCachedObject,
-  _cacheObject, _refreshRequired)
+  _cacheObject, _refreshRequired, KaldiError)
 import skip.config as config
 
 
