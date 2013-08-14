@@ -16,6 +16,7 @@ class KaldiError(Exception):
   msg = ""
   def __init__(self, logfilename):
     self.msg = "Kaldi exited with error. Log file: {0}.".format(logfilename)
+    self.logfilename = logfilename
   def __str__(self):
     return self.msg
 
