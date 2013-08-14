@@ -11,9 +11,9 @@ from subprocess import Popen,PIPE
 from math import log
 from tempfile import mkdtemp,NamedTemporaryFile 
 
-from util import (KaldiObject, _randFilename, _getCachedObject,
+from skip.util import (KaldiObject, _randFilename, _getCachedObject,
   _cacheObject, _refreshRequired)
-import config
+import skip.config as config
 
 
 

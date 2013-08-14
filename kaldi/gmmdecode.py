@@ -9,9 +9,9 @@ from string import split,strip
 from tempfile import NamedTemporaryFile
 from shutil import copy2
 
-from util import (KaldiObject, _randFilename, _getCachedObject,
+from skip.util import (KaldiObject, _randFilename, _getCachedObject,
   _cacheObject, _refreshRequired, KaldiError)
-import config
+import skip.config as config
 
 
 

@@ -4,8 +4,13 @@ Command line tool to test KaldiContext operations.
 """
 __license__ = "Apache License, Version 2.0"
 
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+
 from time import time
 from context import KaldiContext
+
 
 
 def main():
