@@ -143,8 +143,7 @@ def main():
 
   print "Creating new grammar..."
   t0 = time()
-  #G = context.makeG(newWords, newTransTrain)
-  G = context.makeGArpa(newWords, newLm)
+  G = context.makeG(newWords, newLm)
   print "Done in {0:0.2f} seconds.".format(time() - t0)
   print
 

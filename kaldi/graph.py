@@ -155,192 +155,36 @@ def makeLGraph(directory, phonesfile, wordsfile, lexiconfile,
 
 
 
-def makeGGraph(directory, wordsfile, transcripts, interpolateestimates,
-  ngramorder, keepunknowns):
+
+def makeGGraph(directory, wordsfile, arpafile):
 
   Gdir = path.join(directory, "G_graphs")
   (G, idxFile) = _getCachedObject(Gdir, str(locals()))
   
   
   # check file modification time to see if a refresh is required
-  origNames = []
-  copyNames = []
+  refreshRequired = False
   try:
-    origNames.append(wordsfile)
-    copyNames.append(G.wordsfile)
+    if int(path.getmtime(arpafile)) > G.arpafile_time:
+      refreshRequired = True
   except AttributeError:
-    copyNames.append(None)
-  try:
-    origNames.append(transcripts)
-    copyNames.append(G.transcripts)
-  except AttributeError:
-    copyNames.append(None)
+    refreshRequired = True
 
-  if not _refreshRequired(zip(origNames, copyNames)):
+  try:
+    refreshRequired = (refreshRequired and 
+      _refreshRequired((wordsfile, G.wordsfile)))
+  except AttributeError:
+    refreshRequired = True
+
+  if not refreshRequired:
     return G
 
 
-
-  # copy source files
   G.wordsfile = path.join(Gdir, _randFilename("words-", ".txt"))
-  G.transcripts = path.join(Gdir, _randFilename("trans-", ".ark"))
   G.filename = path.join(Gdir, _randFilename("G-", ".fst"))
 
   copy2(wordsfile, G.wordsfile)
-  copy2(transcripts, G.transcripts)
-
-
-
-  # create temp dir for intermediate files
-  tmpDir = mkdtemp()
-  trainFile = "{0}/train.txt".format(tmpDir)
-  vocabFile = "{0}/vocab.txt".format(tmpDir)
-  lmFile = "{0}/lm.arpa".format(tmpDir)
-  fstFile = "{0}/text.fst".format(tmpDir)
-
-
-  # prepare commands
-  interpStr = ""
-  if interpolateestimates:
-    interpStr = "-interpolate"
-  makeNgramCmd = "{0} -order {1} {2} \
-   -vocab {3} -text {4} -lm {5}".format(config.ngramcount,
-    ngramorder, interpStr, vocabFile, trainFile, lmFile)
-
-
-  makeFstCmd = "{0} - | {1} - {2}".format(config.arpa2fst,
-    config.fstprint, fstFile)
-
-  compileFstCmd = "{0} --isymbols={1} --osymbols={1} \
-    --keep_isymbols=false --keep_osymbols=false | \
-    {2} > \"{3}\"".format(config.fstcompile,
-      wordsfile, config.fstrmepsilon, G.filename)
-
-  # prepare vocab for SRILM
-  vocab = {}
-  with open(wordsfile, "r") as wordsIn:
-    with open(vocabFile, "w") as vocabOut:
-      for line in wordsIn:
-        word = split(line)[0]
-        vocab[word] = True
-        vocabOut.write("{0}\n".format(word))
-
-  # prepare training text for SRILM
-  with open(transcripts, "r") as textIn:
-    with open(trainFile, "w") as trainOut:
-      for line in textIn:
-        words = split(line)[1:]
-        for i in range(len(words)):
-          if not words[i] in vocab:
-            if keepunknowns:
-              words[i] = config.UNKNOWN_WORD
-            else:
-              words[i] = ""
-        trainOut.write("{0}\n".format(" ".join(words)))
-
-
-   # remove illegal sos and eos sequences
-  illegalSeqs = []
-  illegalSeqs.append("{0} {1}".format(config.SOS_WORD, config.SOS_WORD))
-  illegalSeqs.append("{0} {1}".format(config.EOS_WORD, config.SOS_WORD))
-  illegalSeqs.append("{0} {1}".format(config.EOS_WORD, config.EOS_WORD))
-
-  logFile = open(path.join(Gdir, _randFilename(suffix=".log")), "w")
-
-  fstInputFile = NamedTemporaryFile(mode="w+", suffix=".txt")
-  fstTextFile = NamedTemporaryFile(mode="w+", suffix=".txt")
-
-  try:
-    # make LM and create text fst from it
-    makeLmProc = Popen(makeNgramCmd, stderr=logFile, shell=True)
-    makeLmProc.communicate()
-    retCode = makeLmProc.poll()
-    if retCode:
-      raise KaldiError(logFile.name)
-    
-
-    with open(lmFile, "r") as lmIn:
-      for line in lmIn:
-        legal = True
-        for seq in illegalSeqs:
-          if seq in line:
-            legal = False
-            break
-        if legal:
-          fstInputFile.write(line)
-
-    fstInputFile.seek(0)
-    makeFstProc = Popen(makeFstCmd, stdin=fstInputFile, stderr=logFile, shell=True)
-    makeFstProc.communicate()
-    retCode = makeFstProc.poll()
-    if retCode:
-      raise KaldiError(logFile.name)
-
-
-    # read text fst, replace symbols, and send to compiler process
-    with open(fstFile, "r") as fstIn:
-      for line in fstIn:
-        parts = split(line)
-        if len(parts) >= 4:
-          if parts[2] == config.EPS:
-            parts[2] = config.EPS_G
-          elif parts[2] == config.SOS_WORD or parts[2] == config.EOS_WORD:
-            parts[2] = config.EPS
-          if parts[3] == config.SOS_WORD or parts[3] == config.EOS_WORD:
-            parts[3] = config.EPS
-        fstTextFile.write("{0}\n".format(" ".join(parts)))
-
-    fstTextFile.seek(0)
-    compileFstProc = Popen(compileFstCmd, stdin=fstTextFile, stderr=logFile, shell=True)
-    compileFstProc.communicate()
-    retCode = compileFstProc.poll()
-    if retCode:
-      raise KaldiError(logFile.name)
-
-  finally:
-    fstInputFile.close()
-    fstTextFile.close()
-    logFile.close()
-
-
-  rmtree(tmpDir, True)
-
-  return _cacheObject(G, idxFile)
-
-
-
-def makeGGraphArpa(directory, wordsfile, arpafile):
-
-  Gdir = path.join(directory, "G_graphs_arpa")
-  (G, idxFile) = _getCachedObject(Gdir, str(locals()))
-  
-  
-  # check file modification time to see if a refresh is required
-  origNames = []
-  copyNames = []
-  try:
-    origNames.append(wordsfile)
-    copyNames.append(G.wordsfile)
-  except AttributeError:
-    copyNames.append(None)
-  try:
-    origNames.append(arpafile)
-    copyNames.append(G.arpafile)
-  except AttributeError:
-    copyNames.append(None)
-
-  if not _refreshRequired(zip(origNames, copyNames)):
-    return G
-
-
-
-  # copy source files
-  G.wordsfile = path.join(Gdir, _randFilename("words-", ".txt"))
-  G.arpafile = path.join(Gdir, _randFilename("lm-", ".arpa"))
-  G.filename = path.join(Gdir, _randFilename("G-", ".fst"))
-
-  copy2(wordsfile, G.wordsfile)
-  copy2(arpafile, G.arpafile)
+  G.arpafile_time = int(path.getmtime(arpafile))
 
 
   tmp = NamedTemporaryFile(suffix=".txt", delete=False)
@@ -374,7 +218,7 @@ def makeGGraphArpa(directory, wordsfile, arpafile):
           word = split(line)[0]
           validWords[word] = True
 
-    with open(G.arpafile, "r") as lmIn:
+    with open(arpafile, "r") as lmIn:
       for line in lmIn:
         legal = True
 

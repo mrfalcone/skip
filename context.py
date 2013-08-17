@@ -151,12 +151,20 @@ class KaldiContext(object):
 
 
 
-  def makeGArpa(self, wordsfile, arpafile):
+  def makeG(self, wordsfile, arpafile):
     """
-    Like makeG but creates an FST using the language model
-    from the specified ARPA file instead of creating one.
+    Creates a grammar FST for decoding graph creation from the
+    specified ARPA model. Discards illegal word sequences and
+    oov words.
+
+    *wordsfile* is the words symbol table used to create the grammar.
+
+    *arpafile* must be the ARPA LM file from which to create the
+    grammar FST.
+
+    Returns an object representing the G graph.
     """
-    return graph.makeGGraphArpa(self.dirname, wordsfile, arpafile)
+    return graph.makeGGraph(self.dirname, wordsfile, arpafile)
 
 
 

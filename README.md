@@ -33,10 +33,8 @@ See the file LICENSE for more details.
 
 Requirements
 ----
-Requires Python 2.6 - 2.7. In addition:
-
-* [KALDI](http://kaldi.sourceforge.net/) - Required. Should be latest version.
-* [SRILM](http://www.speech.sri.com/projects/srilm/) - Optional unless you want to generate language models directly from training data.
+Requires Python 2.6 - 2.7 and [KALDI](http://kaldi.sourceforge.net/) (should be
+latest version).
 
 
 
@@ -69,15 +67,13 @@ hyp = context.decode(feats, HCLG, L, mdl)
 ```
 
 
-It is not much more difficult to generate a grammar FST from an existing ARPA language model or from utterances in Kaldi text archive format:
+It is not much more difficult to generate a grammar FST from an existing ARPA language model:
 
 
 ```python
 ...
-G_arpa = context.makeGArpa(words.txt, "lm.arpa")
-G_gen = context.makeG(words.txt, "data/text")
-HCLG1 = context.makeHCLG(L, G_arpa, mdl)
-HCLG2 = context.makeHCLG(L, G_gen, mdl)
+G = context.makeG(words.txt, "lm.arpa")
+HCLG1 = context.makeHCLG(L, G, mdl)
 ...
 ```
 
