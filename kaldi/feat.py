@@ -79,9 +79,10 @@ def makeMfccFeats(directory, wavscp, samplefreq, useenergy, applycmvn,
   feats.wav_times = {}
   with open(feats.wavscp, "r") as wavsIn:
     for line in wavsIn:
-      if "|" not in line: # ignore commands in the table
-        fname = strip(line[line.index(" "):])
-        feats.wav_times[fname] = int(path.getmtime(fname))
+      if strip(line):
+        if "|" not in line: # ignore commands in the table
+          fname = strip(line[line.index(" "):])
+          feats.wav_times[fname] = int(path.getmtime(fname))
 
 
   if utt2spk and spk2utt:

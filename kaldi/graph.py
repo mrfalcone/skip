@@ -20,7 +20,7 @@ from os import path,remove
 from string import split,strip
 from shutil import copy2,rmtree
 from collections import deque
-from subprocess import Popen,PIPE
+from subprocess import Popen
 from math import log
 from tempfile import mkdtemp,NamedTemporaryFile 
 
@@ -71,7 +71,6 @@ def makeLGraph(directory, phonesfile, wordsfile, lexiconfile,
   copy2(phonesfile, L.phonesfile)
   copy2(wordsfile, L.wordsfile)
   copy2(lexiconfile, L.lexiconfile)
-
   
   # prepare make L command
   makeCmd = "{0} --isymbols={1} --osymbols={2} --keep_isymbols=false \
@@ -96,59 +95,58 @@ def makeLGraph(directory, phonesfile, wordsfile, lexiconfile,
 
   # read lexicon file, create text fst, and pipe to openfst
   # follows recipes from kaldi egs scripts
-  logFile = open(path.join(Ldir, _randFilename(suffix=".log")), "w")
-  makeProc = Popen(makeCmd, stdin=PIPE, stderr=logFile, shell=True)
+  lexiconOut = NamedTemporaryFile(mode="w+", suffix=".txt")
+  with open(L.lexiconfile, "r") as lexiconIn:
+    if not addsilence:
+      loopState = 0
+      nextState = 1
+    else:
+      silCost = -log(silenceprobability);
+      noSilCost = -log(1.0 - silenceprobability)
+      startState = 0
+      loopState = 1
+      silenceState = 2
+      nextState = 3
+      lexiconOut.write("{0} {1} {2} {3} {4}\n".format(startState, loopState, config.EPS, config.EPS, noSilCost))
+      lexiconOut.write("{0} {1} {2} {3} {4}\n".format(startState, loopState, config.SIL_PHONE, config.EPS, silCost))
+      lexiconOut.write("{0} {1} {2} {3}\n".format(silenceState, loopState, config.SIL_PHONE, config.EPS))
+
+    for line in lexiconIn:
+      sp = line.index(" ")
+      word = strip(line[:sp])
+      phones = deque(split(strip(line[sp:])))
+
+      curState = loopState
+      while True:
+        if len(phones) == 0:
+          break
+        elif len(phones) == 1:
+          phone = phones.popleft()
+          if not addsilence or phone == config.SIL_PHONE:
+            lexiconOut.write("{0} {1} {2} {3}\n".format(curState, loopState, phone, word))
+          else:
+            lexiconOut.write("{0} {1} {2} {3} {4}\n".format(curState, loopState, phone, word, noSilCost))
+            lexiconOut.write("{0} {1} {2} {3} {4}\n".format(curState, silenceState, phone, word, silCost))
+        else:
+          phone = phones.popleft()
+          lexiconOut.write("{0} {1} {2} {3}\n".format(curState, nextState, phone, word))
+          curState = nextState
+          nextState += 1
+        word = config.EPS
+
+    lexiconOut.write("{0} 0\n".format(loopState))
 
   try:
-    with open(L.lexiconfile, "r") as lexiconIn:
-      if not addsilence:
-        loopState = 0
-        nextState = 1
-      else:
-        silCost = -log(silenceprobability);
-        noSilCost = -log(1.0 - silenceprobability)
-        startState = 0
-        loopState = 1
-        silenceState = 2
-        nextState = 3
-        makeProc.stdin.write("{0} {1} {2} {3} {4}\n".format(startState, loopState, config.EPS, config.EPS, noSilCost))
-        makeProc.stdin.write("{0} {1} {2} {3} {4}\n".format(startState, loopState, config.SIL_PHONE, config.EPS, silCost))
-        makeProc.stdin.write("{0} {1} {2} {3}\n".format(silenceState, loopState, config.SIL_PHONE, config.EPS))
-
-      for line in lexiconIn:
-        sp = line.index(" ")
-        word = strip(line[:sp])
-        phones = deque(split(strip(line[sp:])))
-
-        curState = loopState
-        while True:
-          if len(phones) == 0:
-            break
-          elif len(phones) == 1:
-            phone = phones.popleft()
-            if not addsilence or phone == config.SIL_PHONE:
-              makeProc.stdin.write("{0} {1} {2} {3}\n".format(curState, loopState, phone, word))
-            else:
-              makeProc.stdin.write("{0} {1} {2} {3} {4}\n".format(curState, loopState, phone, word, noSilCost))
-              makeProc.stdin.write("{0} {1} {2} {3} {4}\n".format(curState, silenceState, phone, word, silCost))
-          else:
-            phone = phones.popleft()
-            makeProc.stdin.write("{0} {1} {2} {3}\n".format(curState, nextState, phone, word))
-            curState = nextState
-            nextState += 1
-          word = config.EPS
-
-      makeProc.stdin.write("{0} 0\n".format(loopState))
-    makeProc.stdin.close()
-    makeProc.wait()
+    logFile = open(path.join(Ldir, _randFilename(suffix=".log")), "w")
+    lexiconOut.seek(0)
+    makeProc = Popen(makeCmd, stdin=lexiconOut, stderr=logFile, shell=True)
+    makeProc.communicate()
     retCode = makeProc.poll()
     if retCode:
       raise KaldiError(logFile.name)
 
-  except:
-    makeProc.kill()
-    raise
   finally:
+    lexiconOut.close()
     logFile.close()
 
   return _cacheObject(L, idxFile)
@@ -158,7 +156,7 @@ def makeLGraph(directory, phonesfile, wordsfile, lexiconfile,
 
 
 def makeGGraph(directory, wordsfile, transcripts, interpolateestimates,
-  ngramorder, keepunknowns, rmillegalseqences, limitvocab):
+  ngramorder, keepunknowns):
 
   Gdir = path.join(directory, "G_graphs")
   (G, idxFile) = _getCachedObject(Gdir, str(locals()))
@@ -205,12 +203,9 @@ def makeGGraph(directory, wordsfile, transcripts, interpolateestimates,
   interpStr = ""
   if interpolateestimates:
     interpStr = "-interpolate"
-  vocabStr = ""
-  if limitvocab:
-    vocabStr = "-vocab {0}".format(vocabFile)
   makeNgramCmd = "{0} -order {1} {2} \
-   {3} -text {4} -lm {5}".format(config.ngramcount,
-    ngramorder, interpStr, vocabStr, trainFile, lmFile)
+   -vocab {3} -text {4} -lm {5}".format(config.ngramcount,
+    ngramorder, interpStr, vocabFile, trainFile, lmFile)
 
 
   makeFstCmd = "{0} - | {1} - {2}".format(config.arpa2fst,
@@ -246,12 +241,14 @@ def makeGGraph(directory, wordsfile, transcripts, interpolateestimates,
 
    # remove illegal sos and eos sequences
   illegalSeqs = []
-  if rmillegalseqences:
-    illegalSeqs.append("{0} {1}".format(config.SOS_WORD, config.SOS_WORD))
-    illegalSeqs.append("{0} {1}".format(config.EOS_WORD, config.SOS_WORD))
-    illegalSeqs.append("{0} {1}".format(config.EOS_WORD, config.EOS_WORD))
+  illegalSeqs.append("{0} {1}".format(config.SOS_WORD, config.SOS_WORD))
+  illegalSeqs.append("{0} {1}".format(config.EOS_WORD, config.SOS_WORD))
+  illegalSeqs.append("{0} {1}".format(config.EOS_WORD, config.EOS_WORD))
 
   logFile = open(path.join(Gdir, _randFilename(suffix=".log")), "w")
+
+  fstInputFile = NamedTemporaryFile(mode="w+", suffix=".txt")
+  fstTextFile = NamedTemporaryFile(mode="w+", suffix=".txt")
 
   try:
     # make LM and create text fst from it
@@ -260,7 +257,7 @@ def makeGGraph(directory, wordsfile, transcripts, interpolateestimates,
     retCode = makeLmProc.poll()
     if retCode:
       raise KaldiError(logFile.name)
-    makeFstProc = Popen(makeFstCmd, stdin=PIPE, stderr=logFile, shell=True)
+    
 
     with open(lmFile, "r") as lmIn:
       for line in lmIn:
@@ -270,19 +267,17 @@ def makeGGraph(directory, wordsfile, transcripts, interpolateestimates,
             legal = False
             break
         if legal:
-          makeFstProc.stdin.write(line)
+          fstInputFile.write(line)
 
-    makeFstProc.stdin.close()
-    makeFstProc.wait()
+    fstInputFile.seek(0)
+    makeFstProc = Popen(makeFstCmd, stdin=fstInputFile, stderr=logFile, shell=True)
+    makeFstProc.communicate()
     retCode = makeFstProc.poll()
     if retCode:
       raise KaldiError(logFile.name)
 
 
-    # read text fst, replace symbols, and send to compiler process,
-    #  which will output to stdout
-    compileFstProc = Popen(compileFstCmd, stdin=PIPE, stderr=logFile, shell=True)
-
+    # read text fst, replace symbols, and send to compiler process
     with open(fstFile, "r") as fstIn:
       for line in fstIn:
         parts = split(line)
@@ -293,15 +288,18 @@ def makeGGraph(directory, wordsfile, transcripts, interpolateestimates,
             parts[2] = config.EPS
           if parts[3] == config.SOS_WORD or parts[3] == config.EOS_WORD:
             parts[3] = config.EPS
-        compileFstProc.stdin.write("{0}\n".format(" ".join(parts)))
+        fstTextFile.write("{0}\n".format(" ".join(parts)))
 
-    compileFstProc.stdin.close()
-    compileFstProc.wait()
+    fstTextFile.seek(0)
+    compileFstProc = Popen(compileFstCmd, stdin=fstTextFile, stderr=logFile, shell=True)
+    compileFstProc.communicate()
     retCode = compileFstProc.poll()
     if retCode:
       raise KaldiError(logFile.name)
 
   finally:
+    fstInputFile.close()
+    fstTextFile.close()
     logFile.close()
 
 
@@ -311,7 +309,7 @@ def makeGGraph(directory, wordsfile, transcripts, interpolateestimates,
 
 
 
-def makeGGraphArpa(directory, wordsfile, arpafile, rmillegalseqences):
+def makeGGraphArpa(directory, wordsfile, arpafile):
 
   Gdir = path.join(directory, "G_graphs_arpa")
   (G, idxFile) = _getCachedObject(Gdir, str(locals()))
@@ -359,38 +357,60 @@ def makeGGraphArpa(directory, wordsfile, arpafile, rmillegalseqences):
 
   # remove illegal sos and eos sequences
   illegalSeqs = []
-  if rmillegalseqences:
-    illegalSeqs.append("{0} {1}".format(config.SOS_WORD, config.SOS_WORD))
-    illegalSeqs.append("{0} {1}".format(config.EOS_WORD, config.SOS_WORD))
-    illegalSeqs.append("{0} {1}".format(config.EOS_WORD, config.EOS_WORD))
+  illegalSeqs.append("{0} {1}".format(config.SOS_WORD, config.SOS_WORD))
+  illegalSeqs.append("{0} {1}".format(config.EOS_WORD, config.SOS_WORD))
+  illegalSeqs.append("{0} {1}".format(config.EOS_WORD, config.EOS_WORD))
 
 
   logFile = open(path.join(Gdir, _randFilename(suffix=".log")), "w")
+  fstInputFile = NamedTemporaryFile(mode="w+", suffix=".txt")
+  fstTextFile = NamedTemporaryFile(mode="w+", suffix=".txt")
 
   try:
-    makeFstProc = Popen(makeFstCmd, stdin=PIPE, stderr=logFile, shell=True)
+    validWords = {}
+    with open(G.wordsfile, "r") as wordsIn:
+      for line in wordsIn:
+        if strip(line):
+          word = split(line)[0]
+          validWords[word] = True
 
     with open(G.arpafile, "r") as lmIn:
       for line in lmIn:
         legal = True
-        for seq in illegalSeqs:
-          if seq in line:
-            legal = False
-            break
-        if legal:
-          makeFstProc.stdin.write(line)
 
-    makeFstProc.stdin.close()
-    makeFstProc.wait()
+        # discard illegal sequences and lines without valid words
+        lineParts = split(line)
+        if len(lineParts) > 1:
+          try:
+            float(lineParts[0])
+            for seq in illegalSeqs:
+              if seq in line:
+                legal = False
+                break
+
+            for w in lineParts[1:]:
+              try:
+                float(w)
+              except ValueError:
+                if not w in validWords:
+                  legal = False
+                  break
+          except ValueError:
+            legal = True
+
+        if legal:
+          fstInputFile.write(line)
+
+
+    fstInputFile.seek(0)
+    makeFstProc = Popen(makeFstCmd, stdin=fstInputFile, stderr=logFile, shell=True)
+    makeFstProc.communicate()
     retCode = makeFstProc.poll()
     if retCode:
       raise KaldiError(logFile.name)
 
 
-    # read text fst, replace symbols, and send to compiler process,
-    #  which will output to stdout
-    compileFstProc = Popen(compileFstCmd, stdin=PIPE, stderr=logFile, shell=True)
-
+    # read text fst, replace symbols, and send to compiler process
     with open(fstFile, "r") as fstIn:
       for line in fstIn:
         parts = split(line)
@@ -401,15 +421,18 @@ def makeGGraphArpa(directory, wordsfile, arpafile, rmillegalseqences):
             parts[2] = config.EPS
           if parts[3] == config.SOS_WORD or parts[3] == config.EOS_WORD:
             parts[3] = config.EPS
-        compileFstProc.stdin.write("{0}\n".format(" ".join(parts)))
+        fstTextFile.write("{0}\n".format(" ".join(parts)))
 
-    compileFstProc.stdin.close()
-    compileFstProc.wait()
+    fstTextFile.seek(0)
+    compileFstProc = Popen(compileFstCmd, stdin=fstTextFile, stderr=logFile, shell=True)
+    compileFstProc.communicate()
     retCode = compileFstProc.poll()
     if retCode:
       raise KaldiError(logFile.name)
 
   finally:
+    fstInputFile.close()
+    fstTextFile.close()
     logFile.close()
 
   remove(fstFile)

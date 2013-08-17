@@ -124,8 +124,7 @@ class KaldiContext(object):
 
 
   def makeG(self, wordsfile, transcripts, interpolateestimates=True,
-    ngramorder=3, keepunknowns=True, rmillegalseqences=True,
-    limitvocab=False):
+    ngramorder=3, keepunknowns=True):
     """
     Creates a grammar FST for decoding graph creation.
 
@@ -143,29 +142,21 @@ class KaldiContext(object):
     If *keepunknowns* is True, oov words are kept as unknown words in
     the language model.
 
-    If *rmillegalseqences* is True, illegal sequences of sentence start/end
-    symbols will be removed from the arpa file.
-
-    If *limitvocab* is True, vocabulary in the LM will be limited
-    to the words in L's corresponding words symbol table.
-
     Returns an object representing the G graph.
     """
     return graph.makeGGraph(self.dirname, wordsfile, transcripts,
-      interpolateestimates, ngramorder, keepunknowns, rmillegalseqences,
-      limitvocab)
+      interpolateestimates, ngramorder, keepunknowns)
 
 
 
 
 
-  def makeGArpa(self, L, arpafile, rmillegalseqences=True):
+  def makeGArpa(self, wordsfile, arpafile):
     """
     Like makeG but creates an FST using the language model
     from the specified ARPA file instead of creating one.
     """
-    return graph.makeGGraphArpa(self.dirname, L.wordsfile, arpafile,
-      rmillegalseqences)
+    return graph.makeGGraphArpa(self.dirname, wordsfile, arpafile)
 
 
 
@@ -264,7 +255,7 @@ class KaldiContext(object):
 
 
 
-  def makeFeats(self, wavscp, samplefreq=16000,
+  def makeFeatures(self, wavscp, samplefreq=16000,
     feattype="mfcc", useenergy=False, applycmvn=True,
     normvars=False, utt2spk=None, spk2utt=None, deltaorder=2):
     """

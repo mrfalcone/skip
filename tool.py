@@ -35,6 +35,7 @@ def main():
   wavTest = "/usr/skiptest/test_small/wav.scp"
   utt2spkTest = "/usr/skiptest/test_small/utt2spk"
   spk2uttTest = "/usr/skiptest/test_small/spk2utt"
+  newLm = "/usr/skiptest/skip/lm_bg5k.arpa"
 
   # parameters for creating new graphs and models
   newTransTrain = "/usr/skiptest/train_si84/text"
@@ -97,7 +98,7 @@ def main():
 
   print "Computing test wave features..."
   t0 = time()
-  feats = context.makeFeats(wavTest, samplefreq=sampleFreq, utt2spk=utt2spkTest, spk2utt=spk2uttTest)
+  feats = context.makeFeatures(wavTest, samplefreq=sampleFreq, utt2spk=utt2spkTest, spk2utt=spk2uttTest)
   print "Done in {0:0.2f} seconds.".format(time() - t0)
   print
 
@@ -142,7 +143,8 @@ def main():
 
   print "Creating new grammar..."
   t0 = time()
-  G = context.makeG(newWords, newTransTrain)
+  #G = context.makeG(newWords, newTransTrain)
+  G = context.makeGArpa(newWords, newLm)
   print "Done in {0:0.2f} seconds.".format(time() - t0)
   print
 
@@ -160,7 +162,7 @@ def main():
 
   print "Computing test wave features..."
   t0 = time()
-  feats = context.makeFeats(wavTest, samplefreq=sampleFreq, utt2spk=utt2spkTest, spk2utt=spk2uttTest)
+  feats = context.makeFeatures(wavTest, samplefreq=sampleFreq, utt2spk=utt2spkTest, spk2utt=spk2uttTest)
   print "Done in {0:0.2f} seconds.".format(time() - t0)
   print
 

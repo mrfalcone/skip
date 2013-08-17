@@ -17,7 +17,7 @@ Defines methods for decoding and aligning with GMM-based models.
 """
 
 from os import path,remove
-from subprocess import Popen,PIPE
+from subprocess import Popen
 from string import split,strip
 from tempfile import NamedTemporaryFile
 from shutil import copy2
@@ -41,12 +41,19 @@ def _align(logFile, mdlfile, intfilename, lexfstalign,
 
 
   # align phones and translate to text
-  makePhonelensProc = Popen(makePhonelensCmd, stdout=PIPE,
+  phoneLensFile = NamedTemporaryFile(mode="w+", suffix=".txt")
+  makePhonelensProc = Popen(makePhonelensCmd, stdout=phoneLensFile,
     stderr=logFile, shell=True)
+  makePhonelensProc.communicate()
+  retCode = makePhonelensProc.poll()
+  if retCode:
+    raise KaldiError(logFile.name)
+
+  phoneLensFile.seek(0)
 
   with open(intphonelens, "w") as lensIntOut:
     with open(phonelens, "w") as lensOut:
-      for line in makePhonelensProc.stdout:
+      for line in phoneLensFile:
         sp = line.index(" ")
         uttId = line[:sp]
         pairsStr = []
@@ -60,12 +67,9 @@ def _align(logFile, mdlfile, intfilename, lexfstalign,
 
         lensIntOut.write(line)
         lensOut.write("{0} {1}\n".format(uttId, " ; ".join(pairsStr)))
-  makePhonelensProc.stdout.close()
-  makePhonelensProc.wait()
-  retCode = makePhonelensProc.poll()
-  if retCode:
-    raise KaldiError(logFile.name)
+  phoneLensFile.close()
 
+  
 
   makeWordlensCmd = "{0} \"{1}\" \"ark:{2}\" ark:- | {3} \"{4}\" \
     {5} {6} ark:- \"ark,t:{7}\" ark:- | {8} ark:- \"ark,t:{9}\" \
@@ -75,12 +79,19 @@ def _align(logFile, mdlfile, intfilename, lexfstalign,
 
 
   # align words and translate to text
-  makeWordlensProc = Popen(makeWordlensCmd, stdout=PIPE,
+  wordLensFile = NamedTemporaryFile(mode="w+", suffix=".txt")
+  makeWordlensProc = Popen(makeWordlensCmd, stdout=wordLensFile,
     stderr=logFile, shell=True)
+  makeWordlensProc.communicate()
+  retCode = makeWordlensProc.poll()
+  if retCode:
+    raise KaldiError(logFile.name)
+
+  wordLensFile.seek(0)
 
   with open(intwordlens, "w") as lensIntOut:
     with open(wordlens, "w") as lensOut:
-      for line in makeWordlensProc.stdout:
+      for line in wordLensFile:
         sp = line.index(" ")
         uttId = line[:sp]
         pairsStr = []
@@ -94,11 +105,8 @@ def _align(logFile, mdlfile, intfilename, lexfstalign,
 
         lensIntOut.write(line)
         lensOut.write("{0} {1}\n".format(uttId, " ; ".join(pairsStr)))
-  makeWordlensProc.stdout.close()
-  makeWordlensProc.wait()
-  retCode = makeWordlensProc.poll()
-  if retCode:
-    raise KaldiError(logFile.name)
+  wordLensFile.close()
+  
 
 
 
@@ -234,10 +242,18 @@ def decodeFeats(directory, featsfile, graphfile, wordsfile, mdlfile,
 
 
     # decode hypothesis transcripts and translate to text
-    decodeProc = Popen(decodeCmd, stdout=PIPE, stderr=logFile, shell=True)
+    decodedFile = NamedTemporaryFile(mode="w+", suffix=".txt")
+    decodeProc = Popen(decodeCmd, stdout=decodedFile, stderr=logFile, shell=True)
+    decodeProc.communicate()
+    retCode = decodeProc.poll()
+    if retCode:
+      raise KaldiError(logFile.name)
+
+    decodedFile.seek(0)
+    
     with open(hyp.intfilename, "w") as hypIntOut:
       with open(hyp.filename, "w") as hypOut:
-        for line in decodeProc.stdout:
+        for line in decodedFile:
           parts = split(line)
           uttId = parts[0]
           words = parts[1:]
@@ -248,11 +264,8 @@ def decodeFeats(directory, featsfile, graphfile, wordsfile, mdlfile,
               words[i] = config.DECODE_OOV_WORD
           hypIntOut.write(line)
           hypOut.write("{0} {1}\n".format(uttId, " ".join(words)))
-    decodeProc.stdout.close()
-    decodeProc.wait()
-    retCode = decodeProc.poll()
-    if retCode:
-      raise KaldiError(logFile.name)
+    decodedFile.close()
+    
 
 
     # if alignment symbols were given, compute word and phone lengths
@@ -391,46 +404,49 @@ def alignFeats(directory, featsfile, transfile, wordsfile, lexfst,
 
 
   logFile = open(path.join(hypdir, _randFilename(suffix=".log")), "w")
+  hypFile = NamedTemporaryFile(mode="w+", suffix=".txt")
 
+  
+  # read word/phone symbol tables
+  wordIntSymbols = {}
+  wordSymbols = {}
+  with open(wordsfile, "r") as symTableIn:
+    for line in symTableIn:
+      parts = split(line)
+      wordIntSymbols[parts[0]] = parts[1]
+      wordSymbols[parts[1]] = parts[0]
+
+  phoneSymbols = {}
+  with open(phonesfilealign, "r") as symTableIn:
+    for line in symTableIn:
+      parts = split(line)
+      phoneSymbols[parts[1]] = parts[0]
+      if parts[0] == config.WORD_BOUND_L:
+        wordLeftSym = parts[1]
+      elif parts[0] == config.WORD_BOUND_R:
+        wordRightSym = parts[1]
+
+
+  # translate transcripts to int symbols
+  with open(hyp.intfilename, "w") as hypOut:
+    with open(hyp.filename, "r") as hypIn:
+      for line in hypIn:
+        parts = split(line)
+        uttId = parts[0]
+        words = parts[1:]
+        for i in range(len(words)):
+          try:
+            words[i] = wordIntSymbols[words[i]]
+          except KeyError:
+            words[i] = wordIntSymbols[config.DECODE_OOV_WORD]
+        translated = "{0} {1}\n".format(uttId, " ".join(words))
+        hypOut.write(translated)
+        hypFile.write(translated)
+    
   try:
-    # read word/phone symbol tables
-    wordIntSymbols = {}
-    wordSymbols = {}
-    with open(wordsfile, "r") as symTableIn:
-      for line in symTableIn:
-        parts = split(line)
-        wordIntSymbols[parts[0]] = parts[1]
-        wordSymbols[parts[1]] = parts[0]
-
-    phoneSymbols = {}
-    with open(phonesfilealign, "r") as symTableIn:
-      for line in symTableIn:
-        parts = split(line)
-        phoneSymbols[parts[1]] = parts[0]
-        if parts[0] == config.WORD_BOUND_L:
-          wordLeftSym = parts[1]
-        elif parts[0] == config.WORD_BOUND_R:
-          wordRightSym = parts[1]
-
-
-    # translate transcripts to int symbols and send to aligner
-    alignProc = Popen(alignCmd, stdin=PIPE, stderr=logFile, shell=True)
-    with open(hyp.intfilename, "w") as hypOut:
-      with open(hyp.filename, "r") as hypIn:
-        for line in hypIn:
-          parts = split(line)
-          uttId = parts[0]
-          words = parts[1:]
-          for i in range(len(words)):
-            try:
-              words[i] = wordIntSymbols[words[i]]
-            except KeyError:
-              words[i] = wordIntSymbols[config.DECODE_OOV_WORD]
-          translated = "{0} {1}\n".format(uttId, " ".join(words))
-          hypOut.write(translated)
-          alignProc.stdin.write(translated)
-    alignProc.stdin.close()
-    alignProc.wait()
+    hypFile.seek(0)
+    alignProc = Popen(alignCmd, stdin=hypFile, stderr=logFile, shell=True)
+    alignProc.communicate()
     retCode = alignProc.poll()
     if retCode:
       raise KaldiError(logFile.name)
@@ -442,6 +458,7 @@ def alignFeats(directory, featsfile, transfile, wordsfile, lexfst,
       
 
   finally:
+    hypFile.close()
     logFile.close()
 
 

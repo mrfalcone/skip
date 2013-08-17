@@ -74,8 +74,8 @@ It is not much more difficult to generate a grammar FST from an existing ARPA la
 
 ```python
 ...
-G_arpa = context.makeGArpa("lm.arpa")
-G_gen = context.makeG("data/text")
+G_arpa = context.makeGArpa(words.txt, "lm.arpa")
+G_gen = context.makeG(words.txt, "data/text")
 HCLG1 = context.makeHCLG(L, G_arpa, mdl)
 HCLG2 = context.makeHCLG(L, G_gen, mdl)
 ...
