@@ -63,7 +63,7 @@ context = KaldiContext("example")
 mdl = context.addGMM("final.mdl", "tree")
 L = context.addL("L.fst", "phones.tab", "words.tab")
 HCLG = context.addHCLG("HCLG.fst")
-feats = context.makeFeats("wav.scp")
+feats = context.makeFeatures("wav.scp")
 hyp = context.decode(feats, HCLG, L, mdl)
 ...
 ```
