@@ -12,13 +12,15 @@ Kaldi functions. It accomplishes this by launching Kaldi binaries
 as separate processes rather than linking with Kaldi
 code. Because of this, the module code is pure Python.
 
-Function results are stored so that subsequent calls to the same function on unmodified files yield cached results immediately.
+Function results are stored so that subsequent calls to the same
+function on unmodified files yield cached results immediately.
 
 
 Currently the following functions are supported:
 
 * FST generation (L, G, HCLG)
 * Adding existing graphs and models
+* Creating MFCC features
 * Decoding to text
 * Word- and phone- level alignment
 
@@ -67,13 +69,14 @@ hyp = context.decode(feats, HCLG, L, mdl)
 ```
 
 
-It is not much more difficult to generate a grammar FST from an existing ARPA language model:
+The following command generates a grammar FST from an existing ARPA language model
+and makes a decoding graph from it:
 
 
 ```python
 ...
 G = context.makeG(words.txt, "lm.arpa")
-HCLG1 = context.makeHCLG(L, G, mdl)
+HCLG = context.makeHCLG(L, G, mdl)
 ...
 ```
 

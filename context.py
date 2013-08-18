@@ -123,34 +123,6 @@ class KaldiContext(object):
 
 
 
-  def makeG(self, wordsfile, transcripts, interpolateestimates=True,
-    ngramorder=3, keepunknowns=True):
-    """
-    Creates a grammar FST for decoding graph creation.
-
-    Uses SRILM to generate an ngram language model from
-    *transcripts* using modified Kneser-Ney discounting.
-
-    *wordsfile* is the words symbol table used to create the grammar.
-
-    *transcripts* must be a list of utterance transcripts in Kaldi archive
-    text format, with utterance id as key.
-
-    If *interpolateestimates* is True, word estimates will be interpolated
-    across *ngram* orders.
-
-    If *keepunknowns* is True, oov words are kept as unknown words in
-    the language model.
-
-    Returns an object representing the G graph.
-    """
-    return graph.makeGGraph(self.dirname, wordsfile, transcripts,
-      interpolateestimates, ngramorder, keepunknowns)
-
-
-
-
-
   def makeG(self, wordsfile, arpafile):
     """
     Creates a grammar FST for decoding graph creation from the
@@ -264,13 +236,18 @@ class KaldiContext(object):
 
 
   def makeFeatures(self, wavscp, samplefreq=16000,
-    feattype="mfcc", useenergy=False, applycmvn=True,
+    feattype="mfcc", useenergy=False, framelength=25,
+    frameshift=10, numceps=13, applycmvn=True,
     normvars=False, utt2spk=None, spk2utt=None, deltaorder=2):
     """
     Creates features for the wave files specified by *wavscp*.
 
     If *feattype* is "mfcc", *useenergy* specifies whether to
     use energy (else C0) to compute mfccs.
+
+    *framelength*, *frameshift*, and *numceps* are the frame length
+    and shift in milliseconds and the number of coefficients to
+    compute, respectively.
 
     If *applycmvn* is True, cepstral mean normalization will
     be applied, per-utterance by default or per-speaker if
@@ -286,7 +263,8 @@ class KaldiContext(object):
     """
     if feattype == "mfcc":
       return feat.makeMfccFeats(self.dirname, wavscp, samplefreq,
-        useenergy, applycmvn, normvars, utt2spk, spk2utt, deltaorder)
+        useenergy, framelength, frameshift, numceps, applycmvn,
+        normvars, utt2spk, spk2utt, deltaorder)
 
     elif feattype == "plp":
       raise NotImplementedError() 

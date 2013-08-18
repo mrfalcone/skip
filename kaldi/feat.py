@@ -28,8 +28,8 @@ import skip.config as config
 
 
 
-def makeMfccFeats(directory, wavscp, samplefreq, useenergy, applycmvn,
-  normvars, utt2spk, spk2utt, deltaorder):
+def makeMfccFeats(directory, wavscp, samplefreq, useenergy, framelength,
+  frameshift, numceps, applycmvn, normvars, utt2spk, spk2utt, deltaorder):
 
   Mfccdir = path.join(directory, "mfcc_feats")
   (feats, idxFile) = _getCachedObject(Mfccdir, str(locals()))
@@ -108,8 +108,10 @@ def makeMfccFeats(directory, wavscp, samplefreq, useenergy, applycmvn,
     rawfeatsDest = "\"ark:{0}\"".format(feats.filename)
 
   makeRawFeatCmd = "{0} --sample-frequency={1} --use-energy={2} \
-    \"scp:{3}\" {4}".format(config.computemfccfeats,
-    samplefreq, str(useenergy).lower(), wavscp, rawfeatsDest)
+    --frame-length={3} --frame-shift={4} --num-ceps={5} \
+    \"scp:{6}\" {7}".format(config.computemfccfeats,
+    samplefreq, str(useenergy).lower(), framelength, frameshift,
+    numceps, wavscp, rawfeatsDest)
 
 
   if applycmvn:

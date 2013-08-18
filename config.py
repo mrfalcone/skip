@@ -40,20 +40,8 @@ except AttributeError:
   KALDI_DIR = None
 
 
-# root directory of SRILM, optional if using existing LMs
-try:
-  SRILM_DIR = userconf.SRILM_DIR
-except AttributeError:
-  SRILM_DIR = None
 
-try:
-  SRILM_MACHINE = userconf.SRILM_MACHINE
-except AttributeError:
-  SRILM_MACHINE = "i686-m64"
-
-
-
-# kaldi/openfst/srilm binary paths
+# binary paths
 try:
   OPENFST_DIR = userconf.OPENFST_DIR
 except AttributeError:
@@ -82,10 +70,6 @@ try:
   fstrmepsilon = userconf.fstrmepsilon
 except AttributeError:
   fstrmepsilon = "{0}/src/bin/fstrmepsilon".format(OPENFST_DIR)
-try:
-  ngramcount = userconf.ngramcount
-except AttributeError:
-  ngramcount = "{0}/lm/bin/{1}/ngram-count".format(SRILM_DIR, SRILM_MACHINE)
 try:
   makehtransducer = userconf.makehtransducer
 except AttributeError:
