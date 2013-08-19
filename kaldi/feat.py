@@ -103,7 +103,7 @@ def makeMfccFeats(directory, wavscp, samplefreq, useenergy, framelength,
   if deltaorder > 0:
     deltaStr = "ark:- | {0} --delta-order={1} ark:-".format(config.adddeltas, deltaorder)
     if not applycmvn:
-      rawfeatsDest = "{0} > \"{1}\"".format(deltaStr, feats.filename)
+      rawfeatsDest = "{0} \"ark:{1}\"".format(deltaStr, feats.filename)
   elif not applycmvn:
     rawfeatsDest = "\"ark:{0}\"".format(feats.filename)
 
@@ -150,5 +150,57 @@ def makeMfccFeats(directory, wavscp, samplefreq, useenergy, framelength,
 
 
   return _cacheObject(feats, idxFile)
+
+
+
+
+
+
+
+
+def segmentFeats(directory, featsfile, segfile, framerate):
+
+  segDir = path.join(directory, "feat_segments")
+  (feats, idxFile) = _getCachedObject(segDir, str(locals()))
+  
+  refreshRequired = False
+  try:
+    if int(path.getmtime(featsfile)) > feats.featsfile_time:
+      refreshRequired = True
+  except AttributeError:
+    refreshRequired = True
+  try:
+    if int(path.getmtime(segfile)) > feats.segfile_time:
+      refreshRequired = True
+  except AttributeError:
+    refreshRequired = True
+
+  if not refreshRequired:
+    return feats
+
+  feats.featsfile_time = int(path.getmtime(featsfile))
+  feats.segfile_time = int(path.getmtime(segfile))
+  feats.filename = path.join(segDir, _randFilename("feats-", ".ark"))
+
+  segFeatsCmd = "{0} --frame-rate={1} \"ark:{2}\" \"{3}\" \
+    \"ark:{4}\"".format(config.extractfeaturesegments, framerate,
+      featsfile, segfile, feats.filename)
+
+
+  # segment and return the features
+  logFile = open(path.join(segDir, _randFilename(suffix=".log")), "w")
+
+  try:
+    featProc = Popen(segFeatsCmd, stderr=logFile, shell=True)
+    featProc.communicate()
+    retCode = featProc.poll()
+    if retCode:
+      raise KaldiError(logFile.name)
+  finally:
+    logFile.close()
+
+
+  return _cacheObject(feats, idxFile)
+
 
 

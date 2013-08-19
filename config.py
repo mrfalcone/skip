@@ -111,6 +111,10 @@ try:
 except AttributeError:
   adddeltas = "{0}/src/featbin/add-deltas".format(KALDI_DIR)
 try:
+  extractfeaturesegments = userconf.extractfeaturesegments
+except AttributeError:
+  extractfeaturesegments = "{0}/src/featbin/extract-feature-segments".format(KALDI_DIR)
+try:
   computecmvnstats = userconf.computecmvnstats
 except AttributeError:
   computecmvnstats = "{0}/src/featbin/compute-cmvn-stats".format(KALDI_DIR)

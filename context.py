@@ -293,6 +293,23 @@ class KaldiContext(object):
 
 
 
+  def segmentFeatures(self, feats, segfile, framerate=100.0):
+    """
+    Segments the specified *feats* object according to the
+    specified *segfile*. *segfile* must be formatted as follows:
+    out-utt-id in-utt-id start_time end_time
+
+    *framerate* specifies the feature sampling rate.
+
+    Returns an object representing the feature segment.
+    """
+    return feat.segmentFeats(self.dirname, feats.filename,
+      segfile, framerate)
+
+
+
+
+
   def decode(self, feats, HCLG, wordsfile, mdl, Lalign=None, beam=16,
     allowpartial=True, acousticscale=0.1):
     """
