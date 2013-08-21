@@ -52,6 +52,7 @@ def main():
   # parameters for using existing graphs and models
   exPhones = "/usr/skiptest/existing/phones.txt"
   exWords = "/usr/skiptest/existing/words.txt"
+  exLexicon = "/usr/skiptest/existing/lexicon.int"
   exLexFst = "/usr/skiptest/existing/L.fst"
   exPhonesAlign = "/usr/skiptest/existing/phones_disambig.txt"
   exWordsAlign = exWords
@@ -101,6 +102,14 @@ def main():
   feats = context.makeFeatures(wavTest, samplefreq=sampleFreq, utt2spk=utt2spkTest, spk2utt=spk2uttTest)
   print "Done in {0:0.2f} seconds.".format(time() - t0)
   print
+
+
+  print "Generating nbest hypotheses..."
+  t0 = time()
+  hyp = context.decodeNbest(10, feats, HCLG, exWords, exLexicon, mdl, L_align)
+  print "Done in {0:0.2f} seconds.".format(time() - t0)
+  print
+
 
   print "Decoding test wave features..."
   t0 = time()

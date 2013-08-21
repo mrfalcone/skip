@@ -127,6 +127,18 @@ try:
 except AttributeError:
   gmmdecode = "{0}/src/gmmbin/gmm-decode-faster".format(KALDI_DIR)
 try:
+  gmmlatgen = userconf.gmmlatgen
+except AttributeError:
+  gmmlatgen = "{0}/src/gmmbin/gmm-latgen-faster".format(KALDI_DIR)
+try:
+  latticetonbest = userconf.latticetonbest
+except AttributeError:
+  latticetonbest = "{0}/src/latbin/lattice-to-nbest".format(KALDI_DIR)
+try:
+  nbesttolinear = userconf.nbesttolinear
+except AttributeError:
+  nbesttolinear = "{0}/src/latbin/nbest-to-linear".format(KALDI_DIR)
+try:
   gmmalign = userconf.gmmalign
 except AttributeError:
   gmmalign = "{0}/src/gmmbin/gmm-align".format(KALDI_DIR)

@@ -110,9 +110,211 @@ def _align(logFile, mdlfile, intfilename, lexfstalign,
 
 
 
+def decodeNbestFeats(directory, numHypotheses, featsfile, graphfile,
+  wordsfile, lexiconfile, mdlfile, treefile, phonesfilealign, lexfstalign, beam,
+  allowpartial, acousticscale):
+
+  hypdir = path.join(directory, "nbest-hypotheses")
+  (hypCollection, idxFile) = _getCachedObject(hypdir, str(locals()))
+  
+
+  # check file modification times to see if refresh is required
+  refreshRequired = False
+  try:
+    if int(path.getmtime(featsfile)) > hypCollection.featsfile_time:
+      refreshRequired = True
+  except AttributeError:
+    refreshRequired = True
+  try:
+    if int(path.getmtime(graphfile)) > hypCollection.graphfile_time:
+      refreshRequired = True
+  except AttributeError:
+    refreshRequired = True
+  try:
+    if int(path.getmtime(wordsfile)) > hypCollection.wordsfile_time:
+      refreshRequired = True
+  except AttributeError:
+    refreshRequired = True
+  try:
+    if int(path.getmtime(lexiconfile)) > hypCollection.lexiconfile_time:
+      refreshRequired = True
+  except AttributeError:
+    refreshRequired = True
+  try:
+    if int(path.getmtime(mdlfile)) > hypCollection.mdlfile_time:
+      refreshRequired = True
+  except AttributeError:
+    refreshRequired = True
+  try:
+    if int(path.getmtime(treefile)) > hypCollection.treefile_time:
+      refreshRequired = True
+  except AttributeError:
+    refreshRequired = True
+
+  if phonesfilealign and lexfstalign:
+    try:
+      if int(path.getmtime(phonesfilealign)) > hypCollection.phonesfilealign_time:
+        refreshRequired = True
+    except AttributeError:
+      refreshRequired = True
+    try:
+      if int(path.getmtime(lexfstalign)) > hypCollection.lexfstalign_time:
+        refreshRequired = True
+    except AttributeError:
+      refreshRequired = True
+
+  if not refreshRequired:
+    return hypCollection
+
+
+  # remove old files
+  try:
+    remove(hypCollection.filename)
+  except (OSError, AttributeError):
+    pass
+  try:
+    remove(hypCollection.intfilename)
+  except (OSError, AttributeError):
+    pass
+  try:
+    remove(hypCollection.wordlens)
+  except (OSError, AttributeError):
+    pass
+  try:
+    remove(hypCollection.intwordlens)
+  except (OSError, AttributeError):
+    pass
+  try:
+    remove(hypCollection.phonelens)
+  except (OSError, AttributeError):
+    pass
+  try:
+    remove(hypCollection.intphonelens)
+  except (OSError, AttributeError):
+    pass
+
+
+  hypCollection.featsfile_time = int(path.getmtime(featsfile))
+  hypCollection.graphfile_time = int(path.getmtime(graphfile))
+  hypCollection.wordsfile_time = int(path.getmtime(wordsfile))
+  hypCollection.lexiconfile_time = int(path.getmtime(lexiconfile))
+  hypCollection.mdlfile_time = int(path.getmtime(mdlfile))
+  hypCollection.treefile_time = int(path.getmtime(treefile))
+  if phonesfilealign and lexfstalign:
+    hypCollection.phonesfilealign_time = int(path.getmtime(phonesfilealign))
+    hypCollection.lexfstalign_time = int(path.getmtime(lexfstalign))
+  
+  
+
+  hypCollection.filename = path.join(hypdir, _randFilename("hyp-", ".txt"))
+  hypCollection.intfilename = path.join(hypdir, _randFilename("hyp-", ".int"))
+  if phonesfilealign and lexfstalign:
+    hypCollection.wordlens = path.join(hypdir, _randFilename("wordlens-", ".txt"))
+    hypCollection.intwordlens = path.join(hypdir, _randFilename("wordlens-", ".int"))
+    hypCollection.phonelens = path.join(hypdir, _randFilename("phonelens-", ".txt"))
+    hypCollection.intphonelens = path.join(hypdir, _randFilename("phonelens-", ".int"))
+
+
+  # prepare lattice generator command
+  tmp = NamedTemporaryFile(suffix=".ark", delete=False)
+  latFile = tmp.name
+  tmp.close()
+
+  latgenCmd = "{0} --beam={1} --allow-partial={2} \
+    --acoustic-scale={3} {4} {5} \"ark:{6}\" ark:- | \
+    {7} --acoustic-scale={3} --n={8} ark:- \"ark:{9}\"".format(config.gmmlatgen,
+    beam, str(allowpartial).lower(), acousticscale, mdlfile,
+    graphfile, featsfile, config.latticetonbest, numHypotheses, latFile)
+
+
+  logFile = open(path.join(hypdir, _randFilename(suffix=".log")), "w")
+
+  try:
+    latgenProc = Popen(latgenCmd, stderr=logFile, shell=True)
+    latgenProc.communicate()
+    retCode = latgenProc.poll()
+    if retCode:
+      raise KaldiError(logFile.name)
+
+
+    # read word/phone symbol tables
+    wordSymbols = {}
+    with open(wordsfile, "r") as symTableIn:
+      for line in symTableIn:
+        parts = split(line)
+        wordSymbols[parts[1]] = parts[0]
+
+    phoneSymbols = {}
+    with open(phonesfilealign, "r") as symTableIn:
+      for line in symTableIn:
+        parts = split(line)
+        phoneSymbols[parts[1]] = parts[0]
+        if parts[0] == config.WORD_BOUND_L:
+          wordLeftSym = parts[1]
+        elif parts[0] == config.WORD_BOUND_R:
+          wordRightSym = parts[1]
+
+
+
+    tmp = NamedTemporaryFile(suffix=".ark", delete=False)
+    alignFile = tmp.name
+    tmp.close()
+
+    decodeCmd = "{0} \"ark:{1}\" \"ark:{2}\" ark,t:-".format(config.nbesttolinear,
+      latFile, alignFile)
+
+    # decode hypothesis transcripts and translate to text
+    decodedFile = NamedTemporaryFile(mode="w+", suffix=".txt")
+    decodeProc = Popen(decodeCmd, stdout=decodedFile, stderr=logFile, shell=True)
+    decodeProc.communicate()
+    retCode = decodeProc.poll()
+    if retCode:
+      raise KaldiError(logFile.name)
+
+    decodedFile.seek(0)
+    
+    with open(hypCollection.intfilename, "w") as hypIntOut:
+      with open(hypCollection.filename, "w") as hypOut:
+        for line in decodedFile:
+          parts = split(line)
+          uttId = parts[0]
+          words = parts[1:]
+          for i in range(len(words)):
+            try:
+              words[i] = wordSymbols[words[i]]
+            except KeyError:
+              words[i] = config.DECODE_OOV_WORD
+          hypIntOut.write(line)
+          hypOut.write("{0} {1}\n".format(uttId, " ".join(words)))
+    decodedFile.close()
+    
+
+
+    # if alignment symbols were given, compute word and phone lengths
+    if phonesfilealign and lexfstalign:
+      _align(logFile, mdlfile, hypCollection.intfilename, lexfstalign,
+        alignFile, hypCollection.intphonelens, hypCollection.phonelens, hypCollection.intwordlens,
+        hypCollection.wordlens, phoneSymbols, wordSymbols, wordLeftSym, wordRightSym)
+
+
+  finally:
+    logFile.close()
+
+
+  remove(alignFile)
+
+
+  return _cacheObject(hypCollection, idxFile)
+
+
+
+
+
+
 
 def decodeFeats(directory, featsfile, graphfile, wordsfile, mdlfile,
-  treefile, phonesfilealign, lexfstalign, beam, allowpartial, acousticscale):
+  treefile, phonesfilealign, lexfstalign, beam, allowpartial,
+  acousticscale, numHypotheses=1):
 
   hypdir = path.join(directory, "hypotheses")
   (hyp, idxFile) = _getCachedObject(hypdir, str(locals()))
