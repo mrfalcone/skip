@@ -156,7 +156,66 @@ def makeLGraph(directory, phonesfile, wordsfile, lexiconfile,
 
 
 
-def makeGGraph(directory, wordsfile, arpafile):
+def makeGGraphTextFst(directory, wordsfile, fstfile, arcsort):
+  Gdir = path.join(directory, "G_graphs")
+  (G, idxFile) = _getCachedObject(Gdir, str(locals()))
+
+  
+  # check file modification time to see if a refresh is required
+  refreshRequired = False
+  try:
+    if int(path.getmtime(fstfile)) > G.fstfile_time:
+      refreshRequired = True
+  except AttributeError:
+    refreshRequired = True
+
+  try:
+    refreshRequired = (refreshRequired and 
+      _refreshRequired((wordsfile, G.wordsfile)))
+  except AttributeError:
+    refreshRequired = True
+
+  if not refreshRequired:
+    return G
+
+
+  G.wordsfile = path.join(Gdir, _randFilename("words-", ".txt"))
+  G.filename = path.join(Gdir, _randFilename("G-", ".fst"))
+
+  copy2(wordsfile, G.wordsfile)
+  G.fstfile_time = int(path.getmtime(fstfile))
+
+  if arcsort:
+    compileFstCmd = "{0} --isymbols={1} --osymbols={1} \
+    --keep_isymbols=false --keep_osymbols=false {2} | \
+    {3} | {4} --sort_type=olabel > \"{5}\"".format(config.fstcompile,
+      wordsfile, fstfile, config.fstrmepsilon, config.fstarcsort,
+      G.filename)
+  else:
+    compileFstCmd = "{0} --isymbols={1} --osymbols={1} \
+      --keep_isymbols=false --keep_osymbols=false {2} | \
+      {3} > \"{4}\"".format(config.fstcompile,
+        wordsfile, fstfile, config.fstrmepsilon, G.filename)
+
+
+  logFile = open(path.join(Gdir, _randFilename(suffix=".log")), "w")
+  try:
+    compileFstProc = Popen(compileFstCmd, stderr=logFile, shell=True)
+    compileFstProc.communicate()
+    retCode = compileFstProc.poll()
+    if retCode:
+      raise KaldiError(logFile.name)
+
+  finally:
+    logFile.close()
+
+  return _cacheObject(G, idxFile)
+
+
+
+
+
+def makeGGraphArpa(directory, wordsfile, arpafile, arcsort):
 
   Gdir = path.join(directory, "G_graphs")
   (G, idxFile) = _getCachedObject(Gdir, str(locals()))
@@ -193,10 +252,16 @@ def makeGGraph(directory, wordsfile, arpafile):
   makeFstCmd = "{0} - | {1} - \"{2}\"".format(config.arpa2fst,
     config.fstprint, fstFile)
 
-  compileFstCmd = "{0} --isymbols={1} --osymbols={1} \
-    --keep_isymbols=false --keep_osymbols=false | \
-    {2} > \"{3}\"".format(config.fstcompile,
-      wordsfile, config.fstrmepsilon, G.filename)
+  if arcsort:
+    compileFstCmd = "{0} --isymbols={1} --osymbols={1} \
+      --keep_isymbols=false --keep_osymbols=false | \
+      {2} | {3} --sort_type=olabel > \"{4}\"".format(config.fstcompile,
+        wordsfile, config.fstrmepsilon, config.fstarcsort, G.filename)
+  else:
+    compileFstCmd = "{0} --isymbols={1} --osymbols={1} \
+      --keep_isymbols=false --keep_osymbols=false | \
+      {2} > \"{3}\"".format(config.fstcompile,
+        wordsfile, config.fstrmepsilon, G.filename)
 
 
   # remove illegal sos and eos sequences
@@ -411,4 +476,59 @@ def makeHCLGGraph(directory, lexfst, phonesfile,
   
 
   return _cacheObject(HCLG, idxFile)
+
+
+
+
+
+def composeGraphs(directory, leftfst, rightfst):
+
+  composeDir = path.join(directory, "composed_graphs")
+  (comp, idxFile) = _getCachedObject(composeDir, str(locals()))
+  
+
+  refreshRequired = False
+  try:
+    if int(path.getmtime(leftfst)) > comp.leftfst_time:
+      refreshRequired = True
+  except AttributeError:
+    refreshRequired = True
+  try:
+    if int(path.getmtime(rightfst)) > comp.rightfst_time:
+      refreshRequired = True
+  except AttributeError:
+    refreshRequired = True
+
+  if not refreshRequired:
+    return comp
+
+
+  # remove old file
+  try:
+    remove(comp.filename)
+  except (OSError, AttributeError):
+    pass
+
+  comp.leftfst_time = int(path.getmtime(leftfst))
+  comp.rightfst_time = int(path.getmtime(rightfst))
+  comp.filename = path.join(composeDir, _randFilename("comp-", ".fst"))
+
+
+  composeCmd = "{0} {1} {2} {3}".format(config.fsttablecompose,
+    leftfst, rightfst, comp.filename)
+
+
+  logFile = open(path.join(composeDir, _randFilename(suffix=".log")), "w")
+
+  try:
+    composeProc = Popen(composeCmd, stderr=logFile, shell=True)
+    composeProc.communicate()
+    retCode = composeProc.poll()
+    if retCode:
+      raise KaldiError(logFile.name)
+
+  finally:
+    logFile.close()
+
+  return _cacheObject(comp, idxFile)
 

@@ -121,9 +121,25 @@ class KaldiContext(object):
 
 
 
+  def makeGText(self, wordsfile, fstfile, arcsort=False):
+    """
+    Creates a grammar FST for decoding graph creation from the
+    specified text FST.
+
+    *wordsfile* is the words symbol table used to create the grammar.
+
+    *fstfile* must be the FST file, in AT&T FST format.
+
+    If *arcsort* is True, arcs will be sorted by output label.
+
+    Returns an object representing the G graph.
+    """
+    return graph.makeGGraphTextFst(self.dirname, wordsfile, fstfile, arcsort)
 
 
-  def makeG(self, wordsfile, arpafile):
+
+
+  def makeGArpa(self, wordsfile, arpafile, arcsort=False):
     """
     Creates a grammar FST for decoding graph creation from the
     specified ARPA model. Discards illegal word sequences and
@@ -134,9 +150,11 @@ class KaldiContext(object):
     *arpafile* must be the ARPA LM file from which to create the
     grammar FST.
 
+    If *arcsort* is True, arcs will be sorted by output label.
+
     Returns an object representing the G graph.
     """
-    return graph.makeGGraph(self.dirname, wordsfile, arpafile)
+    return graph.makeGGraphArpa(self.dirname, wordsfile, arpafile, arcsort)
 
 
 
@@ -200,6 +218,17 @@ class KaldiContext(object):
     HCLG = KaldiObject()
     HCLG.filename = fstfile
     return HCLG
+
+
+
+  def composeGraphs(self, A, B):
+    """
+    Composes the FST represented by the KaldiObject *A*
+    with the FST represented by the KaldiObject *B*.
+
+    Returns A o B
+    """
+    return graph.composeGraphs(self.dirname, A.filename, B.filename)
 
 
 
@@ -408,3 +437,5 @@ class KaldiContext(object):
       L.wordsfile, L.filename, Lalign.phonesfile, Lalign.filename,
       mdl.filename, mdl.treefile, beam, retrybeam, acousticscale,
       selfloopscale, transitionscale)
+  
+

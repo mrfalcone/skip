@@ -164,6 +164,10 @@ try:
 except AttributeError:
   SIL_PHONE = "SIL"
 try:
+  SIL_WORD = userconf.SIL_WORD
+except AttributeError:
+  SIL_WORD = "<SILENCE>"
+try:
   EPS = userconf.EPS
 except AttributeError:
   EPS = "<eps>"
