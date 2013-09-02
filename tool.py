@@ -29,6 +29,8 @@ from context import KaldiContext
 
 def main():
 
+  kaldiDir = "/usr/skiptest/kaldi-trunk"
+
   # parameters to test
   sampleFreq = 16000
   transTest = "/usr/skiptest/test_small/text"
@@ -75,72 +77,72 @@ def main():
 
 
   # ======= EXISTING CONTEXT TEST ======================================
-  # context = KaldiContext("ExistingContext")
+  context = KaldiContext("ExistingContext", kaldiDir)
 
-  # print "Adding lexicon FSTs..."
-  # t0 = time()
-  # L = context.addL(exLexFst, exPhones, exWords)
-  # L_align = context.addL(exLexFstAlign, exPhonesAlign, exWordsAlign)
-  # L_disambig = context.addL(exLexFstDisambig, exPhonesDisambig, exWordsDisambig)
-  # print "Done in {0:0.2f} seconds.".format(time() - t0)
-  # print
+  print "Adding lexicon FSTs..."
+  t0 = time()
+  L = context.addL(exLexFst, exPhones, exWords)
+  L_align = context.addL(exLexFstAlign, exPhonesAlign, exWordsAlign)
+  L_disambig = context.addL(exLexFstDisambig, exPhonesDisambig, exWordsDisambig)
+  print "Done in {0:0.2f} seconds.".format(time() - t0)
+  print
 
-  # print "Adding gmm..."
-  # t0 = time()
-  # mdl = context.addGMM(exMdlFile, exTreeFile)
-  # print "Done in {0:0.2f} seconds.".format(time() - t0)
-  # print
+  print "Adding gmm..."
+  t0 = time()
+  mdl = context.addGMM(exMdlFile, exTreeFile)
+  print "Done in {0:0.2f} seconds.".format(time() - t0)
+  print
 
-  # print "Adding decoding graph..."
-  # t0 = time()
-  # HCLG = context.addHCLG(exHCLG)
-  # print "Done in {0:0.2f} seconds.".format(time() - t0)
-  # print
+  print "Adding decoding graph..."
+  t0 = time()
+  HCLG = context.addHCLG(exHCLG)
+  print "Done in {0:0.2f} seconds.".format(time() - t0)
+  print
 
-  # print "Computing test wave features..."
-  # t0 = time()
-  # feats = context.makeFeatures(wavTest, samplefreq=sampleFreq, utt2spk=utt2spkTest, spk2utt=spk2uttTest)
-  # print "Done in {0:0.2f} seconds.".format(time() - t0)
-  # print
-
-
-  # print "Generating nbest hypotheses..."
-  # t0 = time()
-  # hyp = context.decodeNbest(10, feats, HCLG, exWords, exLexicon, mdl, L_align)
-  # print "Done in {0:0.2f} seconds.".format(time() - t0)
-  # print
+  print "Computing test wave features..."
+  t0 = time()
+  feats = context.makeFeatures(wavTest, samplefreq=sampleFreq, utt2spk=utt2spkTest, spk2utt=spk2uttTest)
+  print "Done in {0:0.2f} seconds.".format(time() - t0)
+  print
 
 
-  # print "Decoding test wave features..."
-  # t0 = time()
-  # hyp = context.decode(feats, HCLG, exWords, mdl, L_align)
-  # print "Done in {0:0.2f} seconds.".format(time() - t0)
-  # print
-
-  # with open(hyp.filename) as f:
-  #   for line in f:
-  #     print line
-  # with open(hyp.wordlens) as f:
-  #   for line in f:
-  #     print line
+  print "Generating nbest hypotheses..."
+  t0 = time()
+  hyp = context.decodeNbest(10, feats, HCLG, exWords, exLexicon, mdl, L_align)
+  print "Done in {0:0.2f} seconds.".format(time() - t0)
+  print
 
 
-  # print "Aligning test wave features to test transcripts..."
-  # t0 = time()
-  # hyp_ali = context.align(feats, transTest, L, L_align, mdl)
-  # print "Done in {0:0.2f} seconds.".format(time() - t0)
-  # print
+  print "Decoding test wave features..."
+  t0 = time()
+  hyp = context.decode(feats, HCLG, exWords, mdl, L_align)
+  print "Done in {0:0.2f} seconds.".format(time() - t0)
+  print
 
-  # with open(hyp_ali.wordlens) as f:
-  #   for line in f:
-  #     print line
+  with open(hyp.filename) as f:
+    for line in f:
+      print line
+  with open(hyp.wordlens) as f:
+    for line in f:
+      print line
+
+
+  print "Aligning test wave features to test transcripts..."
+  t0 = time()
+  hyp_ali = context.align(feats, transTest, L, L_align, mdl)
+  print "Done in {0:0.2f} seconds.".format(time() - t0)
+  print
+
+  with open(hyp_ali.wordlens) as f:
+    for line in f:
+      print line
 
 
 
 
 
   # ======= NEW CONTEXT TEST ===========================================
-  context = KaldiContext("NewContext")
+  context = KaldiContext("NewContext", kaldiDir)
 
   print "Creating new lexicon FSTs..."
   t0 = time()

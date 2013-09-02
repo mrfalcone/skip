@@ -24,14 +24,13 @@ from shutil import copy2
 
 from skip.util import (KaldiObject, _randFilename, _getCachedObject,
   _cacheObject, _refreshRequired, KaldiError)
-import skip.config as config
 
 
 
 
 
 
-def _align(logFile, mdlfile, intfilename, lexfstalign,
+def _align(config, logFile, mdlfile, intfilename, lexfstalign,
   alignFile, intphonelens, phonelens, intwordlens, wordlens,
   phoneSymbols, wordSymbols, wordLeftSym, wordRightSym):
 
@@ -110,7 +109,7 @@ def _align(logFile, mdlfile, intfilename, lexfstalign,
 
 
 
-def decodeNbestFeats(directory, numHypotheses, featsfile, graphfile,
+def decodeNbestFeats(directory, config, numHypotheses, featsfile, graphfile,
   wordsfile, lexiconfile, mdlfile, treefile, phonesfilealign, lexfstalign, beam,
   allowpartial, acousticscale):
 
@@ -292,7 +291,7 @@ def decodeNbestFeats(directory, numHypotheses, featsfile, graphfile,
 
     # if alignment symbols were given, compute word and phone lengths
     if phonesfilealign and lexfstalign:
-      _align(logFile, mdlfile, hypCollection.intfilename, lexfstalign,
+      _align(config, logFile, mdlfile, hypCollection.intfilename, lexfstalign,
         alignFile, hypCollection.intphonelens, hypCollection.phonelens, hypCollection.intwordlens,
         hypCollection.wordlens, phoneSymbols, wordSymbols, wordLeftSym, wordRightSym)
 
@@ -312,7 +311,7 @@ def decodeNbestFeats(directory, numHypotheses, featsfile, graphfile,
 
 
 
-def decodeFeats(directory, featsfile, graphfile, wordsfile, mdlfile,
+def decodeFeats(directory, config, featsfile, graphfile, wordsfile, mdlfile,
   treefile, phonesfilealign, lexfstalign, beam, allowpartial,
   acousticscale, numHypotheses=1):
 
@@ -472,7 +471,7 @@ def decodeFeats(directory, featsfile, graphfile, wordsfile, mdlfile,
 
     # if alignment symbols were given, compute word and phone lengths
     if phonesfilealign and lexfstalign:
-      _align(logFile, mdlfile, hyp.intfilename, lexfstalign,
+      _align(config, logFile, mdlfile, hyp.intfilename, lexfstalign,
         alignFile, hyp.intphonelens, hyp.phonelens, hyp.intwordlens,
         hyp.wordlens, phoneSymbols, wordSymbols, wordLeftSym, wordRightSym)
 
@@ -490,7 +489,7 @@ def decodeFeats(directory, featsfile, graphfile, wordsfile, mdlfile,
 
 
 
-def alignFeats(directory, featsfile, transfile, wordsfile, lexfst,
+def alignFeats(directory, config, featsfile, transfile, wordsfile, lexfst,
   phonesfilealign, lexfstalign, mdlfile, treefile, beam,
   retrybeam, acousticscale, selfloopscale, transitionscale):
 
@@ -654,7 +653,7 @@ def alignFeats(directory, featsfile, transfile, wordsfile, lexfst,
       raise KaldiError(logFile.name)
 
 
-    _align(logFile, mdlfile, hyp.intfilename, lexfstalign,
+    _align(config, logFile, mdlfile, hyp.intfilename, lexfstalign,
         alignFile, hyp.intphonelens, hyp.phonelens, hyp.intwordlens,
         hyp.wordlens, phoneSymbols, wordSymbols, wordLeftSym, wordRightSym)
       

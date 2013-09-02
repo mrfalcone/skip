@@ -26,13 +26,12 @@ from tempfile import mkdtemp,NamedTemporaryFile
 
 from skip.util import (KaldiObject, _randFilename, _getCachedObject,
   _cacheObject, _refreshRequired, KaldiError)
-import skip.config as config
 
 
 
 
 
-def makeLGraph(directory, phonesfile, wordsfile, lexiconfile,
+def makeLGraph(directory, config, phonesfile, wordsfile, lexiconfile,
   addsilence, silenceprobability):
 
   Ldir = path.join(directory, "L_graphs")
@@ -156,7 +155,7 @@ def makeLGraph(directory, phonesfile, wordsfile, lexiconfile,
 
 
 
-def makeGGraphTextFst(directory, wordsfile, fstfile, arcsort):
+def makeGGraphTextFst(directory, config, wordsfile, fstfile, arcsort):
   Gdir = path.join(directory, "G_graphs")
   (G, idxFile) = _getCachedObject(Gdir, str(locals()))
 
@@ -215,7 +214,7 @@ def makeGGraphTextFst(directory, wordsfile, fstfile, arcsort):
 
 
 
-def makeGGraphArpa(directory, wordsfile, arpafile, arcsort):
+def makeGGraphArpa(directory, config, wordsfile, arpafile, arcsort):
 
   Gdir = path.join(directory, "G_graphs")
   (G, idxFile) = _getCachedObject(Gdir, str(locals()))
@@ -353,7 +352,7 @@ def makeGGraphArpa(directory, wordsfile, arpafile, arcsort):
 
 
 
-def makeHCLGGraph(directory, lexfst, phonesfile,
+def makeHCLGGraph(directory, config, lexfst, phonesfile,
   grammarfst, mdlfile, treefile, transitionscale,
   loopscale, contextsize, centralposition):
 
@@ -481,7 +480,7 @@ def makeHCLGGraph(directory, lexfst, phonesfile,
 
 
 
-def composeGraphs(directory, leftfst, rightfst):
+def composeGraphs(directory, config, leftfst, rightfst):
 
   composeDir = path.join(directory, "composed_graphs")
   (comp, idxFile) = _getCachedObject(composeDir, str(locals()))

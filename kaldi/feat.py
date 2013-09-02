@@ -24,11 +24,10 @@ from tempfile import NamedTemporaryFile
 
 from skip.util import (KaldiObject, _randFilename, _getCachedObject,
   _cacheObject, _refreshRequired, KaldiError)
-import skip.config as config
 
 
 
-def makeMfccFeats(directory, wavscp, samplefreq, useenergy, framelength,
+def makeMfccFeats(directory, config, wavscp, samplefreq, useenergy, framelength,
   frameshift, numceps, applycmvn, normvars, utt2spk, spk2utt, deltaorder):
 
   Mfccdir = path.join(directory, "mfcc_feats")
@@ -158,7 +157,7 @@ def makeMfccFeats(directory, wavscp, samplefreq, useenergy, framelength,
 
 
 
-def segmentFeats(directory, featsfile, segfile, framerate):
+def segmentFeats(directory, config, featsfile, segfile, framerate):
 
   segDir = path.join(directory, "feat_segments")
   (feats, idxFile) = _getCachedObject(segDir, str(locals()))

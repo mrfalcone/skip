@@ -13,195 +13,75 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Configuration file for SKIP. Any variables may be overridden
-by creating a file named skipconfig.py in ~/.skip/.
+Defines a configuration object that stores paths and constants.
 """
 
-from os import sys,environ,path
-sys.path.append(path.join(environ["HOME"], ".skip"))
-try:
-  import skipconfig as userconf
-except ImportError:
-  userconf = object()
+from os import path
+
+class ConfigObject(object):
+  """
+  Represents a collection of configuration variables as members.
+  """
+
+  def __init__(self, kaldiDir, userValues=None):
+    """
+    Constructs a new config object. *kaldiDir* must be the
+    root directory of Kaldi. If *userValues* is not None,
+    it must be a dictionary object containing key/value pairs
+    that will be added to the config object.
+    """
+
+    configMap = {}
+
+    # symbol configurations
+    configMap["SIL_PHONE"] = "SIL"
+    configMap["SIL_WORD"] = "<SILENCE>"
+    configMap["EPS"] = "<eps>"
+    configMap["UNKNOWN_WORD"] = "<UNK>"
+    configMap["SOS_WORD"] = "<s>"
+    configMap["EOS_WORD"] = "</s>"
+    configMap["EPS_G"] = "#0"
+    configMap["WORD_BOUND_L"] = "#1"
+    configMap["WORD_BOUND_R"] = "#2"
+    configMap["DECODE_OOV_WORD"] = "<SPOKEN_NOISE>"
+    configMap["DECODE_OOV_PHONE"] = "SPN"
+
+    # paths
+    configMap["KALDI_DIR"] = kaldiDir
+    configMap["CONTEXTS_DIR"] = path.join(path.dirname(__file__), "contexts")
+    configMap["OPENFST_DIR"] = "{0}/tools/openfst".format(configMap["KALDI_DIR"])
+    configMap["fstcompile"] = "{0}/src/bin/fstcompile".format(configMap["OPENFST_DIR"])
+    configMap["fstarcsort"] = "{0}/src/bin/fstarcsort".format(configMap["OPENFST_DIR"])
+    configMap["fstaddselfloops"] = "{0}/src/fstbin/fstaddselfloops".format(configMap["KALDI_DIR"])
+    configMap["arpa2fst"] = "{0}/src/bin/arpa2fst".format(configMap["KALDI_DIR"])
+    configMap["fstprint"] = "{0}/src/bin/fstprint".format(configMap["OPENFST_DIR"])
+    configMap["fstrmepsilon"] = "{0}/src/bin/fstrmepsilon".format(configMap["OPENFST_DIR"])
+    configMap["makehtransducer"] = "{0}/src/bin/make-h-transducer".format(configMap["KALDI_DIR"])
+    configMap["fsttablecompose"] = "{0}/src/fstbin/fsttablecompose".format(configMap["KALDI_DIR"])
+    configMap["fstdeterminizestar"] = "{0}/src/fstbin/fstdeterminizestar".format(configMap["KALDI_DIR"])
+    configMap["fstminimizeencoded"] = "{0}/src/fstbin/fstminimizeencoded".format(configMap["KALDI_DIR"])
+    configMap["fstcomposecontext"] = "{0}/src/fstbin/fstcomposecontext".format(configMap["KALDI_DIR"])
+    configMap["fstrmsymbols"] = "{0}/src/fstbin/fstrmsymbols".format(configMap["KALDI_DIR"])
+    configMap["fstrmepslocal"] = "{0}/src/fstbin/fstrmepslocal".format(configMap["KALDI_DIR"])
+    configMap["addselfloops"] = "{0}/src/bin/add-self-loops".format(configMap["KALDI_DIR"])
+    configMap["computemfccfeats"] = "{0}/src/featbin/compute-mfcc-feats".format(configMap["KALDI_DIR"])
+    configMap["adddeltas"] = "{0}/src/featbin/add-deltas".format(configMap["KALDI_DIR"])
+    configMap["extractfeaturesegments"] = "{0}/src/featbin/extract-feature-segments".format(configMap["KALDI_DIR"])
+    configMap["computecmvnstats"] = "{0}/src/featbin/compute-cmvn-stats".format(configMap["KALDI_DIR"])
+    configMap["applycmvn"] = "{0}/src/featbin/apply-cmvn".format(configMap["KALDI_DIR"])
+    configMap["gmmdecode"] = "{0}/src/gmmbin/gmm-decode-faster".format(configMap["KALDI_DIR"])
+    configMap["gmmlatgen"] = "{0}/src/gmmbin/gmm-latgen-faster".format(configMap["KALDI_DIR"])
+    configMap["latticetonbest"] = "{0}/src/latbin/lattice-to-nbest".format(configMap["KALDI_DIR"])
+    configMap["nbesttolinear"] = "{0}/src/latbin/nbest-to-linear".format(configMap["KALDI_DIR"])
+    configMap["gmmalign"] = "{0}/src/gmmbin/gmm-align".format(configMap["KALDI_DIR"])
+    configMap["alitophones"] = "{0}/src/bin/ali-to-phones".format(configMap["KALDI_DIR"])
+    configMap["phonestoprons"] = "{0}/src/bin/phones-to-prons".format(configMap["KALDI_DIR"])
+    configMap["pronstowordali"] = "{0}/src/bin/prons-to-wordali".format(configMap["KALDI_DIR"])
 
 
+    if userValues:
+      configMap.update(userValues)
 
-# directory where kaldi files and result files will be kept
-try:
-  CONTEXTS_DIR = userconf.CONTEXTS_DIR
-except AttributeError:
-  CONTEXTS_DIR = path.join(path.dirname(__file__), "contexts")
-
-
-# root directory of kaldi e.g. ~/kaldi-trunk
-try:
-  KALDI_DIR = userconf.KALDI_DIR
-except AttributeError:
-  KALDI_DIR = None
-
-
-
-# binary paths
-try:
-  OPENFST_DIR = userconf.OPENFST_DIR
-except AttributeError:
-  OPENFST_DIR = "{0}/tools/openfst".format(KALDI_DIR)
-try:
-  fstcompile = userconf.fstcompile
-except AttributeError:
-  fstcompile = "{0}/src/bin/fstcompile".format(OPENFST_DIR)
-try:
-  fstarcsort = userconf.fstarcsort
-except AttributeError:
-  fstarcsort = "{0}/src/bin/fstarcsort".format(OPENFST_DIR)
-try:
-  fstaddselfloops = userconf.fstaddselfloops
-except AttributeError:
-  fstaddselfloops = "{0}/src/fstbin/fstaddselfloops".format(KALDI_DIR)
-try:
-  arpa2fst = userconf.arpa2fst
-except AttributeError:
-  arpa2fst = "{0}/src/bin/arpa2fst".format(KALDI_DIR)
-try:
-  fstprint = userconf.fstprint
-except AttributeError:
-  fstprint = "{0}/src/bin/fstprint".format(OPENFST_DIR)
-try:
-  fstrmepsilon = userconf.fstrmepsilon
-except AttributeError:
-  fstrmepsilon = "{0}/src/bin/fstrmepsilon".format(OPENFST_DIR)
-try:
-  makehtransducer = userconf.makehtransducer
-except AttributeError:
-  makehtransducer = "{0}/src/bin/make-h-transducer".format(KALDI_DIR)
-try:
-  fsttablecompose = userconf.fsttablecompose
-except AttributeError:
-  fsttablecompose = "{0}/src/fstbin/fsttablecompose".format(KALDI_DIR)
-try:
-  fstdeterminizestar = userconf.fstdeterminizestar
-except AttributeError:
-  fstdeterminizestar = "{0}/src/fstbin/fstdeterminizestar".format(KALDI_DIR)
-try:
-  fstminimizeencoded = userconf.fstminimizeencoded
-except AttributeError:
-  fstminimizeencoded = "{0}/src/fstbin/fstminimizeencoded".format(KALDI_DIR)
-try:
-  fstcomposecontext = userconf.fstcomposecontext
-except AttributeError:
-  fstcomposecontext = "{0}/src/fstbin/fstcomposecontext".format(KALDI_DIR)
-try:
-  fstrmsymbols = userconf.fstrmsymbols
-except AttributeError:
-  fstrmsymbols = "{0}/src/fstbin/fstrmsymbols".format(KALDI_DIR)
-try:
-  fstrmepslocal = userconf.fstrmepslocal
-except AttributeError:
-  fstrmepslocal = "{0}/src/fstbin/fstrmepslocal".format(KALDI_DIR)
-try:
-  addselfloops = userconf.addselfloops
-except AttributeError:
-  addselfloops = "{0}/src/bin/add-self-loops".format(KALDI_DIR)
-try:
-  computemfccfeats = userconf.computemfccfeats
-except AttributeError:
-  computemfccfeats = "{0}/src/featbin/compute-mfcc-feats".format(KALDI_DIR)
-try:
-  adddeltas = userconf.adddeltas
-except AttributeError:
-  adddeltas = "{0}/src/featbin/add-deltas".format(KALDI_DIR)
-try:
-  extractfeaturesegments = userconf.extractfeaturesegments
-except AttributeError:
-  extractfeaturesegments = "{0}/src/featbin/extract-feature-segments".format(KALDI_DIR)
-try:
-  computecmvnstats = userconf.computecmvnstats
-except AttributeError:
-  computecmvnstats = "{0}/src/featbin/compute-cmvn-stats".format(KALDI_DIR)
-try:
-  applycmvn = userconf.applycmvn
-except AttributeError:
-  applycmvn = "{0}/src/featbin/apply-cmvn".format(KALDI_DIR)
-try:
-  gmmdecode = userconf.gmmdecode
-except AttributeError:
-  gmmdecode = "{0}/src/gmmbin/gmm-decode-faster".format(KALDI_DIR)
-try:
-  gmmlatgen = userconf.gmmlatgen
-except AttributeError:
-  gmmlatgen = "{0}/src/gmmbin/gmm-latgen-faster".format(KALDI_DIR)
-try:
-  latticetonbest = userconf.latticetonbest
-except AttributeError:
-  latticetonbest = "{0}/src/latbin/lattice-to-nbest".format(KALDI_DIR)
-try:
-  nbesttolinear = userconf.nbesttolinear
-except AttributeError:
-  nbesttolinear = "{0}/src/latbin/nbest-to-linear".format(KALDI_DIR)
-try:
-  gmmalign = userconf.gmmalign
-except AttributeError:
-  gmmalign = "{0}/src/gmmbin/gmm-align".format(KALDI_DIR)
-try:
-  alitophones = userconf.alitophones
-except AttributeError:
-  alitophones = "{0}/src/bin/ali-to-phones".format(KALDI_DIR)
-try:
-  phonestoprons = userconf.phonestoprons
-except AttributeError:
-  phonestoprons = "{0}/src/bin/phones-to-prons".format(KALDI_DIR)
-try:
-  pronstowordali = userconf.pronstowordali
-except AttributeError:
-  pronstowordali = "{0}/src/bin/prons-to-wordali".format(KALDI_DIR)
-
-
-
-
-# symbol configurations
-try:
-  SIL_PHONE = userconf.SIL_PHONE
-except AttributeError:
-  SIL_PHONE = "SIL"
-try:
-  SIL_WORD = userconf.SIL_WORD
-except AttributeError:
-  SIL_WORD = "<SILENCE>"
-try:
-  EPS = userconf.EPS
-except AttributeError:
-  EPS = "<eps>"
-try:
-  UNKNOWN_WORD = userconf.UNKNOWN_WORD
-except AttributeError:
-  UNKNOWN_WORD = "<UNK>"
-try:
-  SOS_WORD = userconf.SOS_WORD
-except AttributeError:
-  SOS_WORD = "<s>"
-try:
-  EOS_WORD = userconf.EOS_WORD
-except AttributeError:
-  EOS_WORD = "</s>"
-try:
-  EPS_G = userconf.EPS_G
-except AttributeError:
-  EPS_G = "#0"
-try:
-  WORD_BOUND_L = userconf.WORD_BOUND_L
-except AttributeError:
-  WORD_BOUND_L = "#1"
-try:
-  WORD_BOUND_R = userconf.WORD_BOUND_R
-except AttributeError:
-  WORD_BOUND_R = "#2"
-try:
-  DECODE_OOV_WORD = userconf.DECODE_OOV_WORD
-except AttributeError:
-  DECODE_OOV_WORD = "<SPOKEN_NOISE>"
-try:
-  DECODE_OOV_PHONE = userconf.DECODE_OOV_PHONE
-except AttributeError:
-  DECODE_OOV_PHONE = "SPN"
+    self.__dict__.update(configMap)
 
 

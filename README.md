@@ -20,7 +20,7 @@ Currently the following functions are supported:
 
 * FST generation (L, G, HCLG)
 * Adding existing graphs and models
-* Creating MFCC features
+* Creating/segmenting MFCC features
 * Decoding to text
 * Word- and phone- level alignment
 
@@ -40,17 +40,11 @@ latest version).
 
 
 
-Installing and Configuring
-----
-1. Download the project and place in a convenient location.
-2. Configure directories using the `configure.sh` script.
-3. Import the module and initialize a context. See below for examples.
-
-
 
 Getting Started
 ----
-These examples assume skip is in Python's module search path.
+First download the project and be sure it is in Python's module search path.
+Then import the module and initialize a context.
 
 The following example shows how to decode a set of wave files using existing graphs and models. The wave files must be specified as a text scp file for Kaldi.
 
@@ -58,7 +52,7 @@ The following example shows how to decode a set of wave files using existing gra
 ```python
 from skip import KaldiContext
 
-context = KaldiContext("example")
+context = KaldiContext("example", "./kaldi-trunk")
 
 mdl = context.addGMM("final.mdl", "tree")
 L = context.addL("L.fst", "phones.tab", "words.tab")
@@ -95,17 +89,4 @@ with open(hyp.filename) as f:
 
 ```
 
-
-Members of the objects returned by each function vary. An object returned by a context function can be easily inspected by viewing its namespace as a dictionary object, e.g.:
-
-
-```python
-from pprint import pprint
-from skip import KaldiContext
-...
-hyp = context.decode(feats, HCLG, L, mdl, L_align)
-
-pprint(hyp.__dict__)
-
-```
 
