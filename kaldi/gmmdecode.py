@@ -114,7 +114,7 @@ def decodeNbestFeats(directory, config, numHypotheses, featsfile, graphfile,
   allowpartial, acousticscale):
 
   hypdir = path.join(directory, "nbest-hypotheses")
-  (hypCollection, idxFile) = _getCachedObject(hypdir, str(locals()))
+  (hypCollection, idxFile) = _getCachedObject(hypdir, str(map(str,locals())))
   
 
   # check file modification times to see if refresh is required
@@ -207,6 +207,7 @@ def decodeNbestFeats(directory, config, numHypotheses, featsfile, graphfile,
 
   hypCollection.filename = path.join(hypdir, _randFilename("hyp-", ".txt"))
   hypCollection.intfilename = path.join(hypdir, _randFilename("hyp-", ".int"))
+  hypCollection.latfile = path.join(hypdir, _randFilename("lat-", ".ark"))
   if phonesfilealign and lexfstalign:
     hypCollection.wordlens = path.join(hypdir, _randFilename("wordlens-", ".txt"))
     hypCollection.intwordlens = path.join(hypdir, _randFilename("wordlens-", ".int"))
@@ -215,27 +216,17 @@ def decodeNbestFeats(directory, config, numHypotheses, featsfile, graphfile,
 
 
   # prepare lattice generator command
-  tmp = NamedTemporaryFile(suffix=".ark", delete=False)
-  latFile = tmp.name
-  tmp.close()
-
-  latgenCmd = "{0} --beam={1} --allow-partial={2} \
+  latgenCmd = "{0} --verbose=9 --beam={1} --allow-partial={2} \
     --acoustic-scale={3} {4} {5} \"ark:{6}\" ark:- | \
-    {7} --acoustic-scale={3} --n={8} ark:- \"ark:{9}\"".format(config.gmmlatgen,
+    {7} --acoustic-scale={3} --n={8} ark:- \"ark,t:{9}\"".format(config.gmmlatgen,
     beam, str(allowpartial).lower(), acousticscale, mdlfile,
-    graphfile, featsfile, config.latticetonbest, numHypotheses, latFile)
+    graphfile, featsfile, config.latticetonbest, numHypotheses,
+    hypCollection.latfile)
 
 
   logFile = open(path.join(hypdir, _randFilename(suffix=".log")), "w")
 
   try:
-    latgenProc = Popen(latgenCmd, stderr=logFile, shell=True)
-    latgenProc.communicate()
-    retCode = latgenProc.poll()
-    if retCode:
-      raise KaldiError(logFile.name)
-
-
     # read word/phone symbol tables
     wordSymbols = {}
     with open(wordsfile, "r") as symTableIn:
@@ -253,14 +244,19 @@ def decodeNbestFeats(directory, config, numHypotheses, featsfile, graphfile,
         elif parts[0] == config.WORD_BOUND_R:
           wordRightSym = parts[1]
 
+    latgenProc = Popen(latgenCmd, stderr=logFile, shell=True)
+    latgenProc.communicate()
+    retCode = latgenProc.poll()
+    if retCode:
+      raise KaldiError(logFile.name)
 
 
     tmp = NamedTemporaryFile(suffix=".ark", delete=False)
     alignFile = tmp.name
     tmp.close()
 
-    decodeCmd = "{0} \"ark:{1}\" \"ark:{2}\" ark,t:-".format(config.nbesttolinear,
-      latFile, alignFile)
+    decodeCmd = "{0} \"ark,t:{1}\" \"ark:{2}\" ark,t:-".format(config.nbesttolinear,
+      hypCollection.latfile, alignFile)
 
     # decode hypothesis transcripts and translate to text
     decodedFile = NamedTemporaryFile(mode="w+", suffix=".txt")
@@ -316,7 +312,7 @@ def decodeFeats(directory, config, featsfile, graphfile, wordsfile, mdlfile,
   acousticscale, numHypotheses=1):
 
   hypdir = path.join(directory, "hypotheses")
-  (hyp, idxFile) = _getCachedObject(hypdir, str(locals()))
+  (hyp, idxFile) = _getCachedObject(hypdir, str(map(str,locals())))
   
 
   # check file modification times to see if refresh is required
@@ -494,7 +490,7 @@ def alignFeats(directory, config, featsfile, transfile, wordsfile, lexfst,
   retrybeam, acousticscale, selfloopscale, transitionscale):
 
   hypdir = path.join(directory, "align_hypotheses")
-  (hyp, idxFile) = _getCachedObject(hypdir, str(locals()))
+  (hyp, idxFile) = _getCachedObject(hypdir, str(map(str,locals())))
   
 
   # check file modification times to see if refresh is required
@@ -667,4 +663,6 @@ def alignFeats(directory, config, featsfile, transfile, wordsfile, lexfst,
 
 
   return _cacheObject(hyp, idxFile)
+
+
 

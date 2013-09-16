@@ -272,12 +272,15 @@ class KaldiContext(object):
 
 
 
-  def makeFeatures(self, wavscp, samplefreq=16000,
+  def makeFeatures(self, wavscp, segmentsfile=None, samplefreq=16000,
     feattype="mfcc", useenergy=False, framelength=25,
     frameshift=10, numceps=13, applycmvn=True,
     normvars=False, utt2spk=None, spk2utt=None, deltaorder=2):
     """
     Creates features for the wave files specified by *wavscp*.
+
+    If *segmentsfile* is specified, audio is first segmented
+    before computing features.
 
     If *feattype* is "mfcc", *useenergy* specifies whether to
     use energy (else C0) to compute mfccs.
@@ -299,8 +302,8 @@ class KaldiContext(object):
     Returns an object representing the features.
     """
     if feattype == "mfcc":
-      return feat.makeMfccFeats(self.dirname, self.config, wavscp, samplefreq,
-        useenergy, framelength, frameshift, numceps, applycmvn,
+      return feat.makeMfccFeats(self.dirname, self.config, wavscp, segmentsfile,
+        samplefreq, useenergy, framelength, frameshift, numceps, applycmvn,
         normvars, utt2spk, spk2utt, deltaorder)
 
     elif feattype == "plp":
@@ -338,7 +341,7 @@ class KaldiContext(object):
 
     *framerate* specifies the feature sampling rate.
 
-    Returns an object representing the feature segment.
+    Returns an object representing the feature segments.
     """
     return feat.segmentFeats(self.dirname, self.config, feats.filename,
       segfile, framerate)

@@ -23,6 +23,12 @@ class ConfigObject(object):
   Represents a collection of configuration variables as members.
   """
 
+  def __str__(self):
+    """
+    Returns a string representation of the config.
+    """
+    return str(map(str, self.__dict__))
+
   def __init__(self, kaldiDir, userValues=None):
     """
     Constructs a new config object. *kaldiDir* must be the
@@ -36,6 +42,8 @@ class ConfigObject(object):
     # symbol configurations
     configMap["SIL_PHONE"] = "SIL"
     configMap["SIL_WORD"] = "<SILENCE>"
+    configMap["SPN_PHONE"] = "SPN"
+    configMap["NSN_PHONE"] = "NSN"
     configMap["EPS"] = "<eps>"
     configMap["UNKNOWN_WORD"] = "<UNK>"
     configMap["SOS_WORD"] = "<s>"
@@ -66,11 +74,13 @@ class ConfigObject(object):
     configMap["addselfloops"] = "{0}/src/bin/add-self-loops".format(configMap["KALDI_DIR"])
     configMap["computemfccfeats"] = "{0}/src/featbin/compute-mfcc-feats".format(configMap["KALDI_DIR"])
     configMap["adddeltas"] = "{0}/src/featbin/add-deltas".format(configMap["KALDI_DIR"])
+    configMap["extractsegments"] = "{0}/src/featbin/extract-segments".format(configMap["KALDI_DIR"])
     configMap["extractfeaturesegments"] = "{0}/src/featbin/extract-feature-segments".format(configMap["KALDI_DIR"])
     configMap["computecmvnstats"] = "{0}/src/featbin/compute-cmvn-stats".format(configMap["KALDI_DIR"])
     configMap["applycmvn"] = "{0}/src/featbin/apply-cmvn".format(configMap["KALDI_DIR"])
     configMap["gmmdecode"] = "{0}/src/gmmbin/gmm-decode-faster".format(configMap["KALDI_DIR"])
     configMap["gmmlatgen"] = "{0}/src/gmmbin/gmm-latgen-faster".format(configMap["KALDI_DIR"])
+    configMap["latticealignwords"] = "{0}/src/latbin/lattice-align-words".format(configMap["KALDI_DIR"])
     configMap["latticetonbest"] = "{0}/src/latbin/lattice-to-nbest".format(configMap["KALDI_DIR"])
     configMap["nbesttolinear"] = "{0}/src/latbin/nbest-to-linear".format(configMap["KALDI_DIR"])
     configMap["gmmalign"] = "{0}/src/gmmbin/gmm-align".format(configMap["KALDI_DIR"])
@@ -83,5 +93,7 @@ class ConfigObject(object):
       configMap.update(userValues)
 
     self.__dict__.update(configMap)
+
+
 
 

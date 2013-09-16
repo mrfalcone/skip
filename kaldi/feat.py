@@ -27,11 +27,12 @@ from skip.util import (KaldiObject, _randFilename, _getCachedObject,
 
 
 
-def makeMfccFeats(directory, config, wavscp, samplefreq, useenergy, framelength,
-  frameshift, numceps, applycmvn, normvars, utt2spk, spk2utt, deltaorder):
+def makeMfccFeats(directory, config, wavscp, segmentsfile, samplefreq,
+  useenergy, framelength, frameshift, numceps, applycmvn, normvars,
+  utt2spk, spk2utt, deltaorder):
 
   Mfccdir = path.join(directory, "mfcc_feats")
-  (feats, idxFile) = _getCachedObject(Mfccdir, str(locals()))
+  (feats, idxFile) = _getCachedObject(Mfccdir, str(map(str,locals())))
   
 
   # check wave files to make sure they are up to date
@@ -55,6 +56,13 @@ def makeMfccFeats(directory, config, wavscp, samplefreq, useenergy, framelength,
   except AttributeError:
     copyNames.append(None)
 
+  if segmentsfile:
+    try:
+      origNames.append(segmentsfile)
+      copyNames.append(feats.segmentsfile)
+    except AttributeError:
+      copyNames.append(None)
+
   if utt2spk and spk2utt:
     try:
       origNames.append(utt2spk)
@@ -73,7 +81,11 @@ def makeMfccFeats(directory, config, wavscp, samplefreq, useenergy, framelength,
 
   feats.filename = path.join(Mfccdir, _randFilename("feats-", ".ark"))
   feats.wavscp = path.join(Mfccdir, _randFilename("wav-", ".scp"))
+  
   copy2(wavscp, feats.wavscp)
+  if segmentsfile:
+    feats.segmentsfile = path.join(Mfccdir, _randFilename("seg-", ".txt"))
+    copy2(segmentsfile, feats.segmentsfile)
 
   feats.wav_times = {}
   with open(feats.wavscp, "r") as wavsIn:
@@ -90,6 +102,9 @@ def makeMfccFeats(directory, config, wavscp, samplefreq, useenergy, framelength,
     feats.spk2utt = path.join(Mfccdir, _randFilename("spk2utt-", ".ark"))
     copy2(spk2utt, feats.spk2utt)
 
+  tmp = NamedTemporaryFile(suffix=".ark", delete=False)
+  wavSegmentsFile = tmp.name
+  tmp.close()
 
   tmp = NamedTemporaryFile(suffix=".ark", delete=False)
   rawfeatsFile = tmp.name
@@ -106,11 +121,19 @@ def makeMfccFeats(directory, config, wavscp, samplefreq, useenergy, framelength,
   elif not applycmvn:
     rawfeatsDest = "\"ark:{0}\"".format(feats.filename)
 
+  if segmentsfile:
+    sourceSpecifier = "ark:{0}".format(wavSegmentsFile)
+
+    makeSegmentsCmd = "{0} \"scp:{1}\" \"{2}\" \"ark:{3}\"".format(config.extractsegments,
+      feats.wavscp, feats.segmentsfile, wavSegmentsFile)
+  else:
+    sourceSpecifier = "scp:{0}".format(feats.wavscp)
+
   makeRawFeatCmd = "{0} --sample-frequency={1} --use-energy={2} \
     --frame-length={3} --frame-shift={4} --num-ceps={5} \
-    \"scp:{6}\" {7}".format(config.computemfccfeats,
+    \"{6}\" {7}".format(config.computemfccfeats,
     samplefreq, str(useenergy).lower(), framelength, frameshift,
-    numceps, wavscp, rawfeatsDest)
+    numceps, sourceSpecifier, rawfeatsDest)
 
 
   if applycmvn:
@@ -130,6 +153,13 @@ def makeMfccFeats(directory, config, wavscp, samplefreq, useenergy, framelength,
   logFile = open(path.join(Mfccdir, _randFilename(suffix=".log")), "w")
 
   try:
+    if segmentsfile:
+      segmentProc = Popen(makeSegmentsCmd, stderr=logFile, shell=True)
+      segmentProc.communicate()
+      retCode = segmentProc.poll()
+      if retCode:
+        raise KaldiError(logFile.name)
+
     featProc = Popen(makeRawFeatCmd, stderr=logFile, shell=True)
     featProc.communicate()
     retCode = featProc.poll()
@@ -160,7 +190,7 @@ def makeMfccFeats(directory, config, wavscp, samplefreq, useenergy, framelength,
 def segmentFeats(directory, config, featsfile, segfile, framerate):
 
   segDir = path.join(directory, "feat_segments")
-  (feats, idxFile) = _getCachedObject(segDir, str(locals()))
+  (feats, idxFile) = _getCachedObject(segDir, str(map(str,locals())))
   
   refreshRequired = False
   try:
