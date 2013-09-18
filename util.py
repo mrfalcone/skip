@@ -70,7 +70,10 @@ def _getCachedObject(directory, params):
                 obj.__dict__.update(literal_eval(objMembers))
                 return (obj, fname)
   except OSError:
-    makedirs(directory)
+    try:
+      makedirs(directory)
+    except OSError:
+      pass
 
   idxFile = path.join(directory, _randFilename(suffix=".idx"))
   with open(idxFile, "w") as f:

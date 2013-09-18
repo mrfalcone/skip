@@ -17,7 +17,7 @@ Defines methods for decoding and aligning with GMM-based models.
 """
 
 from os import path,remove
-from subprocess import Popen
+from subprocess import Popen,PIPE
 from string import split,strip
 from tempfile import NamedTemporaryFile
 from shutil import copy2
@@ -114,7 +114,7 @@ def decodeNbestFeats(directory, config, numHypotheses, featsfile, graphfile,
   allowpartial, acousticscale):
 
   hypdir = path.join(directory, "nbest-hypotheses")
-  (hypCollection, idxFile) = _getCachedObject(hypdir, str(map(str,locals())))
+  (hypCollection, idxFile) = _getCachedObject(hypdir, " ".join(["{0}:{1}".format(k,v) for k,v in locals().iteritems()]))
   
 
   # check file modification times to see if refresh is required
@@ -312,7 +312,7 @@ def decodeFeats(directory, config, featsfile, graphfile, wordsfile, mdlfile,
   acousticscale, numHypotheses=1):
 
   hypdir = path.join(directory, "hypotheses")
-  (hyp, idxFile) = _getCachedObject(hypdir, str(map(str,locals())))
+  (hyp, idxFile) = _getCachedObject(hypdir, " ".join(["{0}:{1}".format(k,v) for k,v in locals().iteritems()]))
   
 
   # check file modification times to see if refresh is required
@@ -490,7 +490,7 @@ def alignFeats(directory, config, featsfile, transfile, wordsfile, lexfst,
   retrybeam, acousticscale, selfloopscale, transitionscale):
 
   hypdir = path.join(directory, "align_hypotheses")
-  (hyp, idxFile) = _getCachedObject(hypdir, str(map(str,locals())))
+  (hyp, idxFile) = _getCachedObject(hypdir, " ".join(["{0}:{1}".format(k,v) for k,v in locals().iteritems()]))
   
 
   # check file modification times to see if refresh is required
@@ -587,6 +587,7 @@ def alignFeats(directory, config, featsfile, transfile, wordsfile, lexfst,
 
   copy2(transfile, hyp.filename)
 
+
   # prepare align command
   tmp = NamedTemporaryFile(suffix=".ark", delete=False)
   alignFile = tmp.name
@@ -642,11 +643,21 @@ def alignFeats(directory, config, featsfile, transfile, wordsfile, lexfst,
     
   try:
     hypFile.seek(0)
-    alignProc = Popen(alignCmd, stdin=hypFile, stderr=logFile, shell=True)
-    alignProc.communicate()
+    alignProc = Popen(alignCmd, stdin=hypFile, stdout=PIPE, stderr=PIPE, shell=True)
+    (out, err) = alignProc.communicate()
+    logFile.write(out)
+    logFile.write(err)
     retCode = alignProc.poll()
     if retCode:
       raise KaldiError(logFile.name)
+
+    search = "Overall log-likelihood per frame is "
+    for line in err.splitlines():
+
+      if line.startswith("LOG"):
+        if search in line:
+          ll = line[line.index(search) + len(search):]
+          hyp.loglikelihood = ll[:ll.index(" over")]
 
 
     _align(config, logFile, mdlfile, hyp.intfilename, lexfstalign,

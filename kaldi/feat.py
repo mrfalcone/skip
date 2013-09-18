@@ -32,7 +32,7 @@ def makeMfccFeats(directory, config, wavscp, segmentsfile, samplefreq,
   utt2spk, spk2utt, deltaorder):
 
   Mfccdir = path.join(directory, "mfcc_feats")
-  (feats, idxFile) = _getCachedObject(Mfccdir, str(map(str,locals())))
+  (feats, idxFile) = _getCachedObject(Mfccdir, " ".join(["{0}:{1}".format(k,v) for k,v in locals().iteritems()]))
   
 
   # check wave files to make sure they are up to date
@@ -190,7 +190,7 @@ def makeMfccFeats(directory, config, wavscp, segmentsfile, samplefreq,
 def segmentFeats(directory, config, featsfile, segfile, framerate):
 
   segDir = path.join(directory, "feat_segments")
-  (feats, idxFile) = _getCachedObject(segDir, str(map(str,locals())))
+  (feats, idxFile) = _getCachedObject(segDir, " ".join(["{0}:{1}".format(k,v) for k,v in locals().iteritems()]))
   
   refreshRequired = False
   try:

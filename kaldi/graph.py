@@ -33,9 +33,8 @@ from skip.util import (KaldiObject, _randFilename, _getCachedObject,
 
 def makeLGraph(directory, config, phonesfile, wordsfile, lexiconfile,
   addsilence, silenceprobability):
-
   Ldir = path.join(directory, "L_graphs")
-  (L, idxFile) = _getCachedObject(Ldir, str(map(str,locals())))
+  (L, idxFile) = _getCachedObject(Ldir, " ".join(["{0}:{1}".format(k,v) for k,v in locals().iteritems()]))
   
   # check file modification time to see if a refresh is required
   origNames = []
@@ -43,6 +42,8 @@ def makeLGraph(directory, config, phonesfile, wordsfile, lexiconfile,
   try:
     origNames.append(phonesfile)
     copyNames.append(L.phonesfile)
+    # print phonesfile
+    # print L.phonesfile
   except AttributeError:
     copyNames.append(None)
   try:
@@ -157,7 +158,7 @@ def makeLGraph(directory, config, phonesfile, wordsfile, lexiconfile,
 
 def makeGGraphTextFst(directory, config, wordsfile, fstfile, arcsort):
   Gdir = path.join(directory, "G_graphs")
-  (G, idxFile) = _getCachedObject(Gdir, str(map(str,locals())))
+  (G, idxFile) = _getCachedObject(Gdir, " ".join(["{0}:{1}".format(k,v) for k,v in locals().iteritems()]))
 
   
   # check file modification time to see if a refresh is required
@@ -217,7 +218,7 @@ def makeGGraphTextFst(directory, config, wordsfile, fstfile, arcsort):
 def makeGGraphArpa(directory, config, wordsfile, arpafile, arcsort):
 
   Gdir = path.join(directory, "G_graphs")
-  (G, idxFile) = _getCachedObject(Gdir, str(map(str,locals())))
+  (G, idxFile) = _getCachedObject(Gdir, " ".join(["{0}:{1}".format(k,v) for k,v in locals().iteritems()]))
   
   
   # check file modification time to see if a refresh is required
@@ -357,7 +358,7 @@ def makeHCLGGraph(directory, config, lexfst, phonesfile,
   loopscale, contextsize, centralposition):
 
   HCLGdir = path.join(directory, "HCLG_graphs")
-  (HCLG, idxFile) = _getCachedObject(HCLGdir, str(map(str,locals())))
+  (HCLG, idxFile) = _getCachedObject(HCLGdir, " ".join(["{0}:{1}".format(k,v) for k,v in locals().iteritems()]))
   
 
   # check file modification times instead of copying like for other graphs
@@ -483,7 +484,7 @@ def makeHCLGGraph(directory, config, lexfst, phonesfile,
 def composeGraphs(directory, config, leftfst, rightfst):
 
   composeDir = path.join(directory, "composed_graphs")
-  (comp, idxFile) = _getCachedObject(composeDir, str(map(str,locals())))
+  (comp, idxFile) = _getCachedObject(composeDir, " ".join(["{0}:{1}".format(k,v) for k,v in locals().iteritems()]))
   
 
   refreshRequired = False
