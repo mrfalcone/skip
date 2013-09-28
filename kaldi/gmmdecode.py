@@ -34,7 +34,6 @@ def _align(config, logFile, mdlfile, intfilename, lexfstalign,
   alignFile, intphonelens, phonelens, intwordlens, wordlens,
   phoneSymbols, wordSymbols, wordLeftSym, wordRightSym):
 
- 
   makePhonelensCmd = "{0} --write-lengths=true {1} \"ark:{2}\" \
     ark,t:-".format(config.alitophones, mdlfile, alignFile)
 
@@ -111,7 +110,7 @@ def _align(config, logFile, mdlfile, intfilename, lexfstalign,
 
 def decodeNbestFeats(directory, config, numHypotheses, featsfile, graphfile,
   wordsfile, lexiconfile, mdlfile, treefile, phonesfilealign, lexfstalign, beam,
-  allowpartial, acousticscale):
+  allowpartial, acousticscale, mbrdecode):
 
   hypdir = path.join(directory, "nbest-hypotheses")
   (hypCollection, idxFile) = _getCachedObject(hypdir, " ".join(["{0}:{1}".format(k,v) for k,v in locals().iteritems()]))
@@ -214,14 +213,13 @@ def decodeNbestFeats(directory, config, numHypotheses, featsfile, graphfile,
     hypCollection.phonelens = path.join(hypdir, _randFilename("phonelens-", ".txt"))
     hypCollection.intphonelens = path.join(hypdir, _randFilename("phonelens-", ".int"))
 
+  if mbrdecode:
+    hypCollection.intmbr = path.join(hypdir, _randFilename("mbr-", ".int"))
+    hypCollection.mbr = path.join(hypdir, _randFilename("mbr-", ".txt"))
+    hypCollection.stats = path.join(hypdir, _randFilename("sausagestats-", ".ark"))
+    hypCollection.mbrtimes = path.join(hypdir, _randFilename("mbrtimes-", ".ark"))
+    hypCollection.risk = path.join(hypdir, _randFilename("risk-", ".ark"))
 
-  # prepare lattice generator command
-  latgenCmd = "{0} --verbose=9 --beam={1} --allow-partial={2} \
-    --acoustic-scale={3} {4} {5} \"ark:{6}\" ark:- | \
-    {7} --acoustic-scale={3} --n={8} ark:- \"ark,t:{9}\"".format(config.gmmlatgen,
-    beam, str(allowpartial).lower(), acousticscale, mdlfile,
-    graphfile, featsfile, config.latticetonbest, numHypotheses,
-    hypCollection.latfile)
 
 
   logFile = open(path.join(hypdir, _randFilename(suffix=".log")), "w")
@@ -244,19 +242,55 @@ def decodeNbestFeats(directory, config, numHypotheses, featsfile, graphfile,
         elif parts[0] == config.WORD_BOUND_R:
           wordRightSym = parts[1]
 
+
+
+    # write phone boundaries file for word aligning the lattice
+    internals = []
+    begins = []
+    ends = []
+    singletons = []
+    silences = []
+    for phoneInt in sorted(phoneSymbols.keys()):
+      if phoneSymbols[phoneInt] == config.EPS or phoneSymbols[phoneInt].startswith("#"):
+        continue
+
+      if (phoneSymbols[phoneInt] in (config.SIL_PHONE,
+        config.SPN_PHONE, config.NSN_PHONE)):
+        silences.append(phoneInt)
+      elif phoneSymbols[phoneInt].endswith("_S"):
+        singletons.append(phoneInt)
+      elif phoneSymbols[phoneInt].endswith("_B"):
+        begins.append(phoneInt)
+      elif phoneSymbols[phoneInt].endswith("_E"):
+        ends.append(phoneInt)
+      else:
+        internals.append(phoneInt)
+
+
+
+    # prepare lattice generator command
+    latgenCmd = "{0} --beam={1} --allow-partial=true \
+      --acoustic-scale={3} {4} {5} \"ark:{6}\" ark:- | \
+      {7} --silence-phones={8} --wbegin-phones={9} \
+      --wend-phones={10} --winternal-phones={11} --wbegin-and-end-phones={12} \
+      \"{4}\" ark:- \"ark,t:{13}\"".format(config.gmmlatgen,
+      beam, str(allowpartial).lower(), acousticscale, mdlfile,
+      graphfile, featsfile, config.latticewordalign, ":".join(silences), ":".join(begins),
+      ":".join(ends), ":".join(internals), ":".join(singletons), hypCollection.latfile)
+
+
+
     latgenProc = Popen(latgenCmd, stderr=logFile, shell=True)
     latgenProc.communicate()
     retCode = latgenProc.poll()
-    if retCode:
-      raise KaldiError(logFile.name)
-
 
     tmp = NamedTemporaryFile(suffix=".ark", delete=False)
     alignFile = tmp.name
     tmp.close()
 
-    decodeCmd = "{0} \"ark,t:{1}\" \"ark:{2}\" ark,t:-".format(config.nbesttolinear,
-      hypCollection.latfile, alignFile)
+    decodeCmd = "{0} --acoustic-scale={1} --n={2} \"ark,t:{3}\" ark:- | \
+      {4} ark,t:- \"ark:{5}\" ark,t:-".format(config.latticetonbest, acousticscale,
+        numHypotheses, hypCollection.latfile, config.nbesttolinear, alignFile)
 
     # decode hypothesis transcripts and translate to text
     decodedFile = NamedTemporaryFile(mode="w+", suffix=".txt")
@@ -292,9 +326,26 @@ def decodeNbestFeats(directory, config, numHypotheses, featsfile, graphfile,
         hypCollection.wordlens, phoneSymbols, wordSymbols, wordLeftSym, wordRightSym)
 
 
+
+    if mbrdecode:
+      decodeCmd = "{0} --acoustic-scale={1} \"ark,t:{2}\" \"ark,t:{3}\" \
+        \"ark,t:{4}\" \"ark,t:{5}\" \"ark,t:{6}\"".format(config.latticembrdecode, acousticscale,
+          hypCollection.latfile, hypCollection.intmbr, hypCollection.risk, hypCollection.stats,
+          hypCollection.mbrtimes)
+
+      # decode hypothesis transcripts and translate to text
+      decodeProc = Popen(decodeCmd, stderr=logFile, shell=True)
+      decodeProc.communicate()
+      retCode = decodeProc.poll()
+      if retCode:
+        raise KaldiError(logFile.name)
+
+
+
+
+
   finally:
     logFile.close()
-
 
   remove(alignFile)
 
